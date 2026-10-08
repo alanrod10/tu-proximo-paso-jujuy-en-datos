@@ -1,0 +1,782 @@
+[
+  {
+    "correspondencia_id": "CORR_PBG_A01",
+    "area_id": "A01",
+    "fuente": "PBG",
+    "codigo_fuente": "A",
+    "nombre_fuente": "A - AGRICULTURA, GANADERÍA, CAZA Y SILVIC.",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*. Valores 2022-2024 provisorios."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_B_SIN_CORR",
+    "area_id": null,
+    "fuente": "PBG",
+    "codigo_fuente": "B",
+    "nombre_fuente": "(No existe en archivo PBG)",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "DECISION_PROYECTO",
+    "observacion": "Rama B (Pesca) no existe físicamente en PBG Jujuy. No se crea área ni se inventa valor."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A02",
+    "area_id": "A02",
+    "fuente": "PBG",
+    "codigo_fuente": "C",
+    "nombre_fuente": "C - MINERÍA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A03",
+    "area_id": "A03",
+    "fuente": "PBG",
+    "codigo_fuente": "D",
+    "nombre_fuente": "D - INDUSTRIA MANUFACTURERA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A04",
+    "area_id": "A04",
+    "fuente": "PBG",
+    "codigo_fuente": "E",
+    "nombre_fuente": "E - SUMINISTRO DE ELECTRICIDAD, GAS Y AGUA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A05",
+    "area_id": "A05",
+    "fuente": "PBG",
+    "codigo_fuente": "F",
+    "nombre_fuente": "F - CONSTRUCCIÓN",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A06",
+    "area_id": "A06",
+    "fuente": "PBG",
+    "codigo_fuente": "G",
+    "nombre_fuente": "G - COMERCIO AL POR MAYOR Y AL POR MENOR",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A07",
+    "area_id": "A07",
+    "fuente": "PBG",
+    "codigo_fuente": "H",
+    "nombre_fuente": "H - HOTELES Y RESTAURANTES",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A08",
+    "area_id": "A08",
+    "fuente": "PBG",
+    "codigo_fuente": "I",
+    "nombre_fuente": "I  -  TRANSPORTE, ALMACENAMIENTO Y COMUNIC.",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A09_J",
+    "area_id": "A09",
+    "fuente": "PBG",
+    "codigo_fuente": "J",
+    "nombre_fuente": "J -  INTERMEDIACIÓN FINANCIERA",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente financiero de A09."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A09_K",
+    "area_id": "A09",
+    "fuente": "PBG",
+    "codigo_fuente": "K",
+    "nombre_fuente": "K - ACTIVIDADES INMOB, EMPRESARIALES Y DE ALQ.",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente inmobiliario y empresarial de A09."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A10",
+    "area_id": "A10",
+    "fuente": "PBG",
+    "codigo_fuente": "L",
+    "nombre_fuente": "L -  ADMINISTRACIÓN PÚBLICA Y DEFENSA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A11",
+    "area_id": "A11",
+    "fuente": "PBG",
+    "codigo_fuente": "M",
+    "nombre_fuente": "M - ENSEÑANZA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Serie 2004-2024*."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A12_N",
+    "area_id": "A12",
+    "fuente": "PBG",
+    "codigo_fuente": "N",
+    "nombre_fuente": "N - SERVICIOS SOCIALES Y DE SALUD",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente de salud y servicios sociales de A12."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_A12_O",
+    "area_id": "A12",
+    "fuente": "PBG",
+    "codigo_fuente": "O",
+    "nombre_fuente": "O - OTRAS ACTIVIDADES DE Ss COMUNITARIOS, ETC.",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente comunitario y personal de A12."
+  },
+  {
+    "correspondencia_id": "CORR_PBG_P_SIN_CORR",
+    "area_id": null,
+    "fuente": "PBG",
+    "codigo_fuente": "P",
+    "nombre_fuente": "P - HOGARES PRIVADOS CON SERVICIO DOMÉSTICO",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "DECISION_PROYECTO",
+    "observacion": "Existe físicamente en PBG pero no forma parte de las 12 áreas conceptuales del proyecto. No se fuerza su inclusión."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A01",
+    "area_id": "A01",
+    "fuente": "OEDE",
+    "codigo_fuente": "A",
+    "nombre_fuente": "AGRICULTURA, GANADERIA, CAZA Y SILVICULTURA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados. Trimestral 1°T 1996 a 1°T 2026."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_B_SIN_CORR",
+    "area_id": null,
+    "fuente": "OEDE",
+    "codigo_fuente": "B",
+    "nombre_fuente": "PESCA Y SERVICIOS CONEXOS",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "DECISION_PROYECTO",
+    "observacion": "Figura en OEDE Jujuy con valor 's.d.' en todos los trimestres. No se asigna a las 12 áreas."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A02",
+    "area_id": "A02",
+    "fuente": "OEDE",
+    "codigo_fuente": "C",
+    "nombre_fuente": "EXPLOTACION  DE  MINAS  Y  CANTERAS",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en minería."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A03",
+    "area_id": "A03",
+    "fuente": "OEDE",
+    "codigo_fuente": "D",
+    "nombre_fuente": "INDUSTRIA MANUFACTURERA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados industriales."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A04",
+    "area_id": "A04",
+    "fuente": "OEDE",
+    "codigo_fuente": "E",
+    "nombre_fuente": "ELECTRICIDAD, GAS Y AGUA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en suministro de energía y agua."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A05",
+    "area_id": "A05",
+    "fuente": "OEDE",
+    "codigo_fuente": "F",
+    "nombre_fuente": "CONSTRUCCION",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en construcción."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A06",
+    "area_id": "A06",
+    "fuente": "OEDE",
+    "codigo_fuente": "G",
+    "nombre_fuente": "COMERCIO AL POR MAYOR Y AL POR MENOR",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en comercio."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A07",
+    "area_id": "A07",
+    "fuente": "OEDE",
+    "codigo_fuente": "H",
+    "nombre_fuente": "HOTELERIA Y RESTAURANTES",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en hotelería y gastronomía."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A08",
+    "area_id": "A08",
+    "fuente": "OEDE",
+    "codigo_fuente": "I",
+    "nombre_fuente": "SERVICIOS DE TRANSPORTE, DE ALMACENAMIENTO Y DE COMUNICACIONES",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en transporte y comunicaciones."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A09_J",
+    "area_id": "A09",
+    "fuente": "OEDE",
+    "codigo_fuente": "J",
+    "nombre_fuente": "INTERMEDIACION FINANCIERA Y OTROS SERVICIOS FINANCIEROS",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente financiero registrado privado de A09."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A09_K",
+    "area_id": "A09",
+    "fuente": "OEDE",
+    "codigo_fuente": "K",
+    "nombre_fuente": "SERVICIOS INMOBILIARIOS, EMPRESARIALES Y DE ALQUILER",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente inmobiliario y empresarial registrado privado de A09."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A10_AUSENTE",
+    "area_id": "A10",
+    "fuente": "OEDE",
+    "codigo_fuente": "L (Ausente)",
+    "nombre_fuente": "(Rama L no publicada en OEDE Jujuy)",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "CONFIRMADO",
+    "observacion": "OEDE releva empleo registrado privado; Rama L no existe en la hoja Jujuy. Regla estricta: NO imputar 0, NO estimar, NO inventar."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A11",
+    "area_id": "A11",
+    "fuente": "OEDE",
+    "codigo_fuente": "M",
+    "nombre_fuente": "ENSEÑANZA",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en enseñanza."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A12_N",
+    "area_id": "A12",
+    "fuente": "OEDE",
+    "codigo_fuente": "N",
+    "nombre_fuente": "SERVICIOS SOCIALES Y DE SALUD",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en salud y servicios sociales."
+  },
+  {
+    "correspondencia_id": "CORR_OEDE_A12_O",
+    "area_id": "A12",
+    "fuente": "OEDE",
+    "codigo_fuente": "O",
+    "nombre_fuente": "SERVICIOS COMUNITARIOS, SOCIALES Y PERSONALES N.C.P.",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Asalariados registrados privados en servicios comunitarios."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A01_1",
+    "area_id": "A01",
+    "fuente": "MIP",
+    "codigo_fuente": "1",
+    "nombre_fuente": "Agricultura, silv y pesca",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Base 2015. Multiplicador de empleo total, directo e indirecto."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A02_2",
+    "area_id": "A02",
+    "fuente": "MIP",
+    "codigo_fuente": "2",
+    "nombre_fuente": "Minería",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Base 2015. Multiplicador de empleo total, directo e indirecto."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_3_SIN_CORR",
+    "area_id": null,
+    "fuente": "MIP",
+    "codigo_fuente": "3",
+    "nombre_fuente": "Petróleo, gas y refinados",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "DECISION_PROYECTO",
+    "observacion": "Sector MIP no forzado en ninguna de las 12 áreas según pauta metodológica."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_4",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "4",
+    "nombre_fuente": "Elab. de productos alimenticios, bebidas y tabaco",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_5",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "5",
+    "nombre_fuente": "Productos textiles",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_6",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "6",
+    "nombre_fuente": "Prendas de vestir",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_7",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "7",
+    "nombre_fuente": "Curtido y terminación de cueros",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_8",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "8",
+    "nombre_fuente": "Producción de madera y fab. de prod. de madera",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_9",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "9",
+    "nombre_fuente": "Fabricación de papel y de prod. papel",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_10",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "10",
+    "nombre_fuente": "Edición e impresión",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_11",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "11",
+    "nombre_fuente": "Sustancias y productos químicos",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_12",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "12",
+    "nombre_fuente": "Productos de caucho y plástico",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_13",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "13",
+    "nombre_fuente": "Productos minerales no metálicos",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_14",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "14",
+    "nombre_fuente": "Metales comunes y prod. elaborados de metal",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_15",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "15",
+    "nombre_fuente": "Maquinaria, equipo",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_16",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "16",
+    "nombre_fuente": "Aparatos y equipos eléctricos y comunicaciones",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_17",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "17",
+    "nombre_fuente": "Vehículos aut. remolques y eq. de transporte",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A03_18",
+    "area_id": "A03",
+    "fuente": "MIP",
+    "codigo_fuente": "18",
+    "nombre_fuente": "Muebles y colchones",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente industrial en MIP (sectores 4 a 18)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_19_SIN_CORR",
+    "area_id": null,
+    "fuente": "MIP",
+    "codigo_fuente": "19",
+    "nombre_fuente": "Reciclamiento y gestión de desechos",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "DECISION_PROYECTO",
+    "observacion": "Sector MIP no forzado en A03 según regla metodológica."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_20_SIN_CORR",
+    "area_id": null,
+    "fuente": "MIP",
+    "codigo_fuente": "20",
+    "nombre_fuente": "Reparación máquinas y equipos",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "DECISION_PROYECTO",
+    "observacion": "Sector MIP no forzado en A03 según regla metodológica."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A04_21",
+    "area_id": "A04",
+    "fuente": "MIP",
+    "codigo_fuente": "21",
+    "nombre_fuente": "Electricidad, agua y gas",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Base 2015."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A05_22",
+    "area_id": "A05",
+    "fuente": "MIP",
+    "codigo_fuente": "22",
+    "nombre_fuente": "Construcción",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Base 2015."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A06_23",
+    "area_id": "A06",
+    "fuente": "MIP",
+    "codigo_fuente": "23",
+    "nombre_fuente": "Comercio",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Base 2015."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A07_24",
+    "area_id": "A07",
+    "fuente": "MIP",
+    "codigo_fuente": "24",
+    "nombre_fuente": "Hoteles, campamentos y otros tipos de hospedaje",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente hotelero de A07 (MIP 24+25)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A07_25",
+    "area_id": "A07",
+    "fuente": "MIP",
+    "codigo_fuente": "25",
+    "nombre_fuente": "Restaurantes, bares y cantinas",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente gastronómico de A07 (MIP 24+25)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A08_26",
+    "area_id": "A08",
+    "fuente": "MIP",
+    "codigo_fuente": "26",
+    "nombre_fuente": "Transporte",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente transporte de A08 (MIP 26+27)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A08_27",
+    "area_id": "A08",
+    "fuente": "MIP",
+    "codigo_fuente": "27",
+    "nombre_fuente": "Correo y comunicaciones",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente comunicaciones de A08 (MIP 26+27)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A09_28",
+    "area_id": "A09",
+    "fuente": "MIP",
+    "codigo_fuente": "28",
+    "nombre_fuente": "Intermediación financiera",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente financiero de A09 (MIP 28+29)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A09_29",
+    "area_id": "A09",
+    "fuente": "MIP",
+    "codigo_fuente": "29",
+    "nombre_fuente": "Actividades inmobiliarias, empresariales y de alquiler",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente inmobiliario y empresarial de A09 (MIP 28+29)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A10_30",
+    "area_id": "A10",
+    "fuente": "MIP",
+    "codigo_fuente": "30",
+    "nombre_fuente": "Administración pública",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Base 2015."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A11_31",
+    "area_id": "A11",
+    "fuente": "MIP",
+    "codigo_fuente": "31",
+    "nombre_fuente": "Enseñanza",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Base 2015."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A12_32",
+    "area_id": "A12",
+    "fuente": "MIP",
+    "codigo_fuente": "32",
+    "nombre_fuente": "Servicios sociales y de salud",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente de salud y servicios sociales de A12 (MIP 32+33)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_A12_33",
+    "area_id": "A12",
+    "fuente": "MIP",
+    "codigo_fuente": "33",
+    "nombre_fuente": "Otras actividades de servicios comunitarios",
+    "tipo_correspondencia": "MULTIPLE",
+    "estado": "CONFIRMADO",
+    "observacion": "Componente comunitario de A12 (MIP 32+33)."
+  },
+  {
+    "correspondencia_id": "CORR_MIP_34_SIN_CORR",
+    "area_id": null,
+    "fuente": "MIP",
+    "codigo_fuente": "34",
+    "nombre_fuente": "Hogares con servicios domésticos",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "DECISION_PROYECTO",
+    "observacion": "Excluido metodológicamente en la fuente (valores '-' en Cuadros 2 y 3). No se asigna a las 12 áreas."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A01_NO_APLICA",
+    "area_id": "A01",
+    "fuente": "EIL",
+    "codigo_fuente": "Sector primario",
+    "nombre_fuente": "Actividades primarias",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "CONFIRMADO",
+    "observacion": "EIL Gran Jujuy excluye actividades primarias por diseño de muestra. No aplica."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A02_NO_APLICA",
+    "area_id": "A02",
+    "fuente": "EIL",
+    "codigo_fuente": "Sector primario",
+    "nombre_fuente": "Actividades primarias",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "CONFIRMADO",
+    "observacion": "EIL Gran Jujuy excluye minería por diseño de muestra. No aplica."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A03",
+    "area_id": "A03",
+    "fuente": "EIL",
+    "codigo_fuente": "Rama",
+    "nombre_fuente": "Industria manufacturera",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Tabla 3.9.2. Índice Feb.15=100 y variaciones relativas. Gran Jujuy, firmas >= 5 trab."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A04",
+    "area_id": "A04",
+    "fuente": "EIL",
+    "codigo_fuente": "Rama",
+    "nombre_fuente": "Electricidad, gas y agua",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Tabla 3.9.2. Gran Jujuy, firmas >= 5 trab."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A05",
+    "area_id": "A05",
+    "fuente": "EIL",
+    "codigo_fuente": "Rama",
+    "nombre_fuente": "Construcción",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Tabla 3.9.2. Gran Jujuy, firmas >= 5 trab."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A06_AGRUPADA",
+    "area_id": "A06",
+    "fuente": "EIL",
+    "codigo_fuente": "Rama",
+    "nombre_fuente": "Comercio, restaurantes y hoteles",
+    "tipo_correspondencia": "AGRUPADA",
+    "estado": "CONFIRMADO",
+    "observacion": "Tabla 3.9.2. Agrupación indivisible de la fuente. No dividir 50/50. Correspondencia agrupada."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A07_AGRUPADA",
+    "area_id": "A07",
+    "fuente": "EIL",
+    "codigo_fuente": "Rama",
+    "nombre_fuente": "Comercio, restaurantes y hoteles",
+    "tipo_correspondencia": "AGRUPADA",
+    "estado": "CONFIRMADO",
+    "observacion": "Tabla 3.9.2. Agrupación indivisible de la fuente. No dividir 50/50. Correspondencia agrupada."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A08",
+    "area_id": "A08",
+    "fuente": "EIL",
+    "codigo_fuente": "Rama",
+    "nombre_fuente": "Transporte, almacenaje y comunicaciones",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Tabla 3.9.2. Gran Jujuy, firmas >= 5 trab."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A09",
+    "area_id": "A09",
+    "fuente": "EIL",
+    "codigo_fuente": "Rama",
+    "nombre_fuente": "Servicios financieros y a las empresas",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Tabla 3.9.2. Gran Jujuy, firmas >= 5 trab."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A10_NO_APLICA",
+    "area_id": "A10",
+    "fuente": "EIL",
+    "codigo_fuente": "Sector público",
+    "nombre_fuente": "Sector público",
+    "tipo_correspondencia": "NO_APLICA",
+    "estado": "CONFIRMADO",
+    "observacion": "EIL releva únicamente empresas privadas formales. No aplica a administración pública."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_A12_PARCIAL",
+    "area_id": "A12",
+    "fuente": "EIL",
+    "codigo_fuente": "Rama",
+    "nombre_fuente": "Servicios comunales, sociales y personales",
+    "tipo_correspondencia": "PARCIAL",
+    "estado": "OBSERVADO",
+    "observacion": "Tabla 3.9.2. Servicios comunales/sociales privados de Gran Jujuy. No cubre todo N+O pero es el agrupamiento formal afín."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_TRANSVERSAL_CALIF",
+    "area_id": null,
+    "fuente": "EIL",
+    "codigo_fuente": "Tabla 3.9.6",
+    "nombre_fuente": "Calificación de la tarea (Profesional, Técnica, Operativa, No Calificada)",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Indicadores transversales para el conjunto del Gran Jujuy. Mide calificación de la tarea, no nivel educativo."
+  },
+  {
+    "correspondencia_id": "CORR_EIL_TRANSVERSAL_DEMANDA",
+    "area_id": null,
+    "fuente": "EIL",
+    "codigo_fuente": "Tabla 3.9.8",
+    "nombre_fuente": "Demanda laboral (Búsquedas, Cobertura, No cobertura)",
+    "tipo_correspondencia": "DIRECTA",
+    "estado": "CONFIRMADO",
+    "observacion": "Indicador específico de demanda laboral en firmas de 5+ ocupados en Gran Jujuy. No renombrar como empleo ni vacantes."
+  }
+]

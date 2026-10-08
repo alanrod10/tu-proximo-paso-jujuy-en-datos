@@ -1,0 +1,74 @@
+[
+  {
+    "area_id": "A01",
+    "nombre": "Agro y producción primaria",
+    "descripcion": "Actividades agrícolas, ganaderas, caza, silvicultura y producción primaria provincial.",
+    "icono": "sprout"
+  },
+  {
+    "area_id": "A02",
+    "nombre": "Minería",
+    "descripcion": "Extracción de minerales metalíferos, no metalíferos, rocas de aplicación y recursos del subsuelo.",
+    "icono": "pickaxe"
+  },
+  {
+    "area_id": "A03",
+    "nombre": "Industria manufacturera",
+    "descripcion": "Transformación de materias primas: alimentos, bebidas, tabaco, papel, productos químicos, metales y manufacturas.",
+    "icono": "factory"
+  },
+  {
+    "area_id": "A04",
+    "nombre": "Energía, agua y gas",
+    "descripcion": "Generación y distribución de electricidad, suministro de gas y captación/distribución de agua.",
+    "icono": "zap"
+  },
+  {
+    "area_id": "A05",
+    "nombre": "Construcción",
+    "descripcion": "Obras de infraestructura vial, edificación residencial, comercial e ingeniería civil.",
+    "icono": "hard-hat"
+  },
+  {
+    "area_id": "A06",
+    "nombre": "Comercio",
+    "descripcion": "Comercio mayorista y minorista de bienes y servicios comerciales.",
+    "icono": "shopping-cart"
+  },
+  {
+    "area_id": "A07",
+    "nombre": "Turismo y gastronomía",
+    "descripcion": "Servicios de hotelería, alojamiento, restaurantes, bares y actividades gastronómicas.",
+    "icono": "utensils"
+  },
+  {
+    "area_id": "A08",
+    "nombre": "Transporte y comunicaciones",
+    "descripcion": "Transporte terrestre, logística de carga, almacenamiento, servicios postales y telecomunicaciones.",
+    "icono": "truck"
+  },
+  {
+    "area_id": "A09",
+    "nombre": "Finanzas y servicios empresariales",
+    "descripcion": "Intermediación financiera, seguros, servicios inmobiliarios, jurídicos, contables y profesionales a empresas.",
+    "icono": "landmark"
+  },
+  {
+    "area_id": "A10",
+    "nombre": "Administración pública",
+    "descripcion": "Servicios de la administración pública provincial/nacional, defensa, justicia y seguridad social obligatoria.",
+    "icono": "building"
+  },
+  {
+    "area_id": "A11",
+    "nombre": "Educación",
+    "descripcion": "Servicios de enseñanza inicial, primaria, secundaria, superior y universitaria en sus distintos ámbitos.",
+    "icono": "graduation-cap"
+  },
+  {
+    "area_id": "A12",
+    "nombre": "Salud y servicios comunitarios",
+    "descripcion": "Servicios médicos, hospitalarios, farmacéuticos, atención social y servicios comunitarios, culturales y personales.",
+    "icono": "heart-pulse"
+  }
+]

@@ -1,0 +1,61 @@
+{
+  "proyecto": {
+    "nombre": "TU PRÓXIMO PASO — JUJUY EN DATOS",
+    "institucion": "IES N.º 11",
+    "tipo": "Aplicación web informativa y académica",
+    "objetivo": "Presentar y permitir la exploración rigurosa de información económica y laboral oficial de la Provincia de Jujuy sin inferir recomendaciones automáticas ni alterar el significado estadístico de las fuentes.",
+    "regla_trazabilidad": "USUARIO -> AREA_ID -> FUENTE -> DATASET -> VARIABLE -> PERÍODO -> UNIDAD -> TRANSFORMACIÓN -> RESULTADO MOSTRADO"
+  },
+  "fuentes_oficiales": [
+    {
+      "fuente_id": "PBG",
+      "organismo": "Dirección Provincial de Estadística y Censos (DiPEC)",
+      "archivo_original": "PBG/PBG-2004-2024-actualizacion-agosto-2025.xlsx",
+      "indicador": "Producto Bruto Geográfico a precios básicos",
+      "periodicidad": "Anual (2004-2024)",
+      "unidades": [
+        "Miles de pesos de 2004 (precios constantes)",
+        "Miles de pesos corrientes",
+        "Variación anual % (total)"
+      ],
+      "condicion_especial": "Años 2022*, 2023* y 2024* poseen condición de provisorios en la fuente oficial."
+    },
+    {
+      "fuente_id": "OEDE",
+      "organismo": "Observatorio de Empleo y Dinámica Empresarial (OEDE), MTEySS en base a SIPA",
+      "archivo_original": "OEDE/provinciales_serie_empleo_trimestral_2dig_7.xlsx",
+      "hoja": "Jujuy",
+      "indicador": "Asalariados registrados del sector privado (puestos de trabajo declarados)",
+      "periodicidad": "Trimestral (1°T 1996 a 1°T 2026)",
+      "unidades": [
+        "Puestos de trabajo"
+      ],
+      "condicion_especial": "Rama L (Administración Pública) no publicada en la fuente para Jujuy. Bajo ninguna circunstancia se imputa cero ni estimaciones. Registros 's.d.' se preservan como secreto estadístico."
+    },
+    {
+      "fuente_id": "EIL",
+      "organismo": "Encuesta de Indicadores Laborales (EIL), Dirección General de Estudios y Estadísticas Laborales, MTEySS",
+      "archivos_originales": [
+        "EIL/EIL_2407_2.xlsx (Tabla 3.9.2 - Índice Feb.15=100 y variaciones trimestrales y anuales por rama)",
+        "EIL/EIL_2407_6.xlsx (Tabla 3.9.6 - Tasas y composición según calificación de la tarea)",
+        "EIL/EIL_2407_8.xlsx (Tabla 3.9.8 - Demanda laboral, coberturas y tasas de no cobertura)"
+      ],
+      "cobertura": "Aglomerado Gran Jujuy",
+      "universo": "Empresas privadas formales de 5 y más trabajadores.",
+      "periodicidad": "Trimestral (3.9.2: II-15 a I-26) y Mensual (3.9.6 y 3.9.8: 2015-03 a 2026-05)",
+      "condicion_especial": "Excluye actividades primarias (A01, A02) y administración pública (A10). Calificación de la tarea no equivale a nivel educativo de la persona. Demanda laboral mide búsquedas activas de personal y no vacantes totales ni nivel de empleo."
+    },
+    {
+      "fuente_id": "MIP",
+      "organismo": "Dirección Provincial de Estadística y Censos (DiPEC) en base a CEP XXI",
+      "archivo_original": "MIP/Informe-MIP-y-Empleo-Jujuy-base-2015.pdf",
+      "indicador": "Multiplicadores de empleo total, directo e indirecto",
+      "anio_base": 2015,
+      "unidades": [
+        "Coeficiente técnico",
+        "Puestos de trabajo por cada $1.000.000 de VBP a precios de 2015"
+      ],
+      "condicion_especial": "Describe relaciones estructurales y capacidad de tracción de la economía jujeña base 2015. No representa puestos de trabajo actuales. Sectores 3, 19, 20 y 34 no se asignan forzadamente."
+    }
+  ]
+}
