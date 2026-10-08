@@ -4,7 +4,7 @@ import { AreaIcon } from '../utils/iconHelper';
 import { MethodWarning } from '../components/MethodWarning';
 import { MissingDataBadge } from '../components/MissingDataBadge';
 import { formatNumber, formatCurrencyMiles, formatPercent } from '../utils/formatters';
-import { ArrowLeft, Database, FileText, Calendar, Building, Info, HelpCircle, ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, Building, Info, HelpCircle, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { HumanDataCards } from '../components/HumanDataCards';
 
 import defaultAreas from '../../data/areas.json';
@@ -323,14 +323,21 @@ export const AreaDetailPage: React.FC<AreaDetailPageProps> = ({
       {(activeTab === 'todos' || activeTab === 'pbg') && (
         <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold mb-1">
-                <Database className="w-3.5 h-3.5" />
-                <span>Fuente 1: Dirección Provincial de Estadística y Censos (DiPEC)</span>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs uppercase tracking-wider font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  💰 ¿Cuánto aporta esta actividad a Jujuy?
+                </span>
+                <span className="text-xs text-slate-500 font-semibold">
+                  PBG · Producto Bruto Geográfico · DiPEC
+                </span>
               </div>
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">
                 Producto Bruto Geográfico (PBG) a Precios Básicos
               </h2>
+              <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                El PBG permite observar cuánto valor genera una actividad dentro de la economía de la provincia.
+              </p>
             </div>
 
             {/* Selector de modo de precios */}
@@ -488,16 +495,20 @@ export const AreaDetailPage: React.FC<AreaDetailPageProps> = ({
       {/* ========================================================================= */}
       {(activeTab === 'todos' || activeTab === 'oede') && (
         <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-          <div className="border-b border-slate-100 pb-4">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-xs font-semibold mb-1">
-              <Database className="w-3.5 h-3.5" />
-              <span>Fuente 2: Observatorio de Empleo y Dinámica Empresarial (OEDE / SIPA)</span>
+          <div className="border-b border-slate-100 pb-4 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-wider font-extrabold text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                👥 ¿Cuántos puestos de trabajo registrados hay?
+              </span>
+              <span className="text-xs text-slate-500 font-semibold">
+                OEDE · Empleo privado registrado · SIPA
+              </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
               Puestos de Trabajo Asalariados Registrados del Sector Privado
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Relevamiento continuo basado en declaraciones juradas del Sistema Integrado Previsional Argentino (SIPA).
+            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+              Estos datos muestran puestos de trabajo asalariados privados registrados formalmente en la seguridad social (SIPA). Son puestos de trabajo, no necesariamente personas.
             </p>
           </div>
 
@@ -613,16 +624,20 @@ export const AreaDetailPage: React.FC<AreaDetailPageProps> = ({
       {/* ========================================================================= */}
       {(activeTab === 'todos' || activeTab === 'eil') && (
         <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-          <div className="border-b border-slate-100 pb-4">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-800 text-xs font-semibold mb-1">
-              <Database className="w-3.5 h-3.5" />
-              <span>Fuente 3: Encuesta de Indicadores Laborales (EIL) - MTEySS</span>
+          <div className="border-b border-slate-100 pb-4 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-wider font-extrabold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                🧩 ¿Qué tipo de tareas aparecen?
+              </span>
+              <span className="text-xs text-slate-500 font-semibold">
+                EIL · Encuesta de Indicadores Laborales · MTEySS
+              </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
               Indicadores de Dinámica Laboral (Aglomerado Gran Jujuy)
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Cobertura: empresas privadas formales con 5 o más personas ocupadas en Gran Jujuy.
+            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+              La EIL permite observar la composición de los puestos según el tipo de tarea que realizan en empresas de 5 o más ocupados. La clasificación describe la tarea del puesto, no los estudios o títulos de la persona.
             </p>
           </div>
 
@@ -711,16 +726,20 @@ export const AreaDetailPage: React.FC<AreaDetailPageProps> = ({
       {/* ========================================================================= */}
       {(activeTab === 'todos' || activeTab === 'mip') && (
         <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-          <div className="border-b border-slate-100 pb-4">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-800 text-xs font-semibold mb-1">
-              <Database className="w-3.5 h-3.5" />
-              <span>Fuente 4: Matriz de Insumo-Producto de Jujuy (DiPEC / CEP XXI)</span>
+          <div className="border-b border-slate-100 pb-4 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-wider font-extrabold text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                🔗 ¿Cómo se relaciona esta actividad con otras?
+              </span>
+              <span className="text-xs text-slate-500 font-semibold">
+                MIP · Matriz Insumo-Producto · DiPEC / CEP XXI
+              </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
               Multiplicadores de Empleo Directo e Indirecto (Año Base 2015)
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Estimación de relaciones estructurales y capacidad de irradiación de empleo sobre proveedores provinciales.
+            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+              La MIP permite observar cómo una actividad se vincula con otros sectores mediante empleo directo e indirecto. Base 2015 · coeficientes estructurales · no representa empleo actual.
             </p>
           </div>
 

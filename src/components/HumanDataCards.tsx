@@ -89,7 +89,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
   return (
     <div className="space-y-6">
       {/* ======================================================================= */}
-      {/* TARJETA 1: ¿QUÉ MUEVE ESTA ACTIVIDAD? (PBG)                             */}
+      {/* TARJETA 1: ¿CUÁNTO APORTA ESTA ACTIVIDAD? (PBG)                         */}
       {/* ======================================================================= */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-emerald-100 shadow-sm hover:border-emerald-300 transition-all">
         <div className="flex items-start justify-between gap-4">
@@ -100,13 +100,21 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
 
             <div className="space-y-2 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] uppercase tracking-wider font-black text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  ¿Cuánto produce esta actividad?
+                <span 
+                  className="text-[11px] uppercase tracking-wider font-black text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200"
+                  aria-label="¿Cuánto produce esta actividad?"
+                >
+                  💰 ¿Cuánto aporta esta actividad a Jujuy?
                 </span>
                 <span className="text-[11px] text-slate-500 font-semibold">
-                  PBG · DiPEC (base 2004)
+                  PBG · Producto Bruto Geográfico · DiPEC
                 </span>
               </div>
+
+              {/* Explicación sencilla de primer nivel */}
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                El PBG permite observar cuánto valor genera una actividad dentro de la economía de la provincia.
+              </p>
 
               {/* Número visual principal */}
               <div className="pt-1">
@@ -159,7 +167,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
 
         {/* Footer simple y directo */}
         <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
-          <span>Fuente oficial: DiPEC · Serie continua 2004–2024*</span>
+          <span>Fuente oficial: DiPEC · Serie continua 2004–2024* · Base 2004</span>
           <button
             onClick={() => onViewTechnicalDetails('pbg')}
             className="font-bold text-emerald-700 hover:text-emerald-900 transition-colors flex items-center gap-1"
@@ -173,7 +181,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
         {expandedCard === 'pbg' && (
           <div className="mt-4 p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 text-xs text-slate-700 space-y-2">
             <p>
-              <strong>¿Qué significa este indicador?</strong> El Producto Bruto Geográfico (PBG) mide el valor agregado monetario de bienes y servicios generados por cada rama económica dentro del territorio provincial.
+              <strong>¿Qué significa este indicador?</strong> El Producto Bruto Geográfico (PBG) mide el valor agregado monetario de bienes y servicios generados por cada rama económica dentro del territorio provincial. Representa valor de producción, no ganancias empresariales ni dinero individual a repartir.
             </p>
             <p className="text-slate-600">
               Las ramas oficiales ({latestPbgRecs.map((r) => r.codigo_rama).join(', ')}) se reportan a precios constantes (descontando el efecto inflacionario para reflejar el volumen físico de producción) y a precios corrientes de cada ejercicio.
@@ -194,13 +202,21 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
 
             <div className="space-y-2 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] uppercase tracking-wider font-black text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                  ¿Cuántos puestos registra?
+                <span 
+                  className="text-[11px] uppercase tracking-wider font-black text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200"
+                  aria-label="¿Cuántos puestos registra?"
+                >
+                  👥 ¿Cuántos puestos de trabajo registrados hay?
                 </span>
                 <span className="text-[11px] text-slate-500 font-semibold">
-                  Empleo privado formal · OEDE / SIPA
+                  OEDE · Empleo privado registrado · SIPA
                 </span>
               </div>
+
+              {/* Explicación sencilla de primer nivel */}
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                Estos datos muestran puestos de trabajo asalariados privados registrados formalmente en la seguridad social. Son puestos de trabajo, no necesariamente personas.
+              </p>
 
               {isA10 ? (
                 <div className="space-y-1 pt-1">
@@ -257,14 +273,14 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
               <strong>¿Qué contempla este registro?</strong> Puestos de trabajo de asalariados formalmente declarados por empresas privadas con CUIT en Jujuy.
             </p>
             <p className="text-slate-600">
-              No incluye la administración pública provincial ni municipal, ni el trabajo informal, ni a trabajadores independientes (autónomos o monotributistas).
+              No incluye la administración pública provincial ni municipal, ni el trabajo informal, ni a trabajadores independientes (autónomos o monotributistas). No representan la totalidad de personas ocupadas de la provincia ni vacantes u ofertas de empleo disponibles.
             </p>
           </div>
         )}
       </div>
 
       {/* ======================================================================= */}
-      {/* TARJETA 3: ¿CÓMO SE CONECTA CON OTRAS ACTIVIDADES? (MIP)                */}
+      {/* TARJETA 3: ¿CÓMO SE RELACIONA CON OTRAS? (MIP)                          */}
       {/* ======================================================================= */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-indigo-100 shadow-sm hover:border-indigo-300 transition-all">
         <div className="flex items-start justify-between gap-4">
@@ -275,24 +291,26 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
 
             <div className="space-y-2 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] uppercase tracking-wider font-black text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
-                  ¿Cómo se relaciona con otras actividades?
+                <span 
+                  className="text-[11px] uppercase tracking-wider font-black text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200"
+                  aria-label="¿Cómo se relaciona con otras actividades?"
+                >
+                  🔗 ¿Cómo se relaciona esta actividad con otras?
                 </span>
                 <span className="text-[11px] text-slate-500 font-semibold">
-                  MIP Jujuy · DiPEC / CEP XXI (Base 2015)
+                  MIP · Matriz Insumo-Producto · DiPEC / CEP XXI
                 </span>
               </div>
 
-              <div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  Relaciones entre empleo directo e indirecto
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed max-w-2xl">
-                  La MIP muestra relaciones entre actividades mediante empleo directo e indirecto.
-                </p>
-                <span className="text-[10px] text-indigo-800 font-semibold block mt-1">
-                  Base 2015 · coeficientes estructurales · no representa empleo actual.
-                </span>
+              {/* Explicación sencilla de primer nivel */}
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                La MIP permite observar cómo una actividad se vincula con otros sectores mediante empleo directo e indirecto. La MIP muestra relaciones entre actividades mediante empleo directo e indirecto.
+              </p>
+
+              {/* Advertencia obligatoria visible */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-100/70 border border-indigo-200 text-[11px] text-indigo-950 font-bold">
+                <Info className="w-3.5 h-3.5 text-indigo-700 flex-shrink-0" />
+                <span>Base 2015 · coeficientes estructurales · no representa empleo actual.</span>
               </div>
 
               {/* Diagrama visual de flujo directo -> indirecto -> total */}
@@ -309,7 +327,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
                           {primaryMipSector.empleo_directo_por_millon ? formatNumber(primaryMipSector.empleo_directo_por_millon, 2) : '—'}
                         </div>
                       </div>
-                      <span className="text-[10px] text-slate-500 mt-2">Puestos directos por cada $1M de producción</span>
+                      <span className="text-[10px] text-slate-500 mt-2">Puestos directos por cada $1M de producción (VBP)</span>
                     </div>
 
                     {/* Indirecto */}
@@ -322,7 +340,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
                           {primaryMipSector.empleo_indirecto_por_millon ? formatNumber(primaryMipSector.empleo_indirecto_por_millon, 2) : '—'}
                         </div>
                       </div>
-                      <span className="text-[10px] text-slate-500 mt-2">Relación indirecta en cadena de proveedores</span>
+                      <span className="text-[10px] text-slate-500 mt-2">Relación indirecta en proveedores por cada $1M de producción (VBP)</span>
                     </div>
 
                     {/* Total */}
@@ -335,7 +353,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
                           {primaryMipSector.multiplicador_total_por_millon ? formatNumber(primaryMipSector.multiplicador_total_por_millon, 2) : '—'}
                         </div>
                       </div>
-                      <span className="text-[10px] text-indigo-800 mt-2 font-medium">Coeficiente total por cada $1M de producción</span>
+                      <span className="text-[10px] text-indigo-800 mt-2 font-medium">Coeficiente total por cada $1M de producción (VBP)</span>
                     </div>
                   </div>
                 </div>
@@ -371,7 +389,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
               <strong>Advertencia metodológica importante:</strong> Los multiplicadores de la MIP corresponden a la estructura productiva del año base 2015.
             </p>
             <p className="text-slate-600">
-              Reflejan la capacidad de arrastre intersectorial de la actividad económica, pero <strong>no representan el nivel de empleo actual ni vacantes laborales</strong>.
+              Reflejan la capacidad de arrastre intersectorial y relaciones técnicas sobre proveedores, pero <strong>no representan el nivel de empleo actual ni vacantes laborales</strong>, ni predicen puestos que se crearán ante futuras inversiones.
             </p>
           </div>
         )}
@@ -389,11 +407,14 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
 
             <div className="space-y-2 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] uppercase tracking-wider font-black text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
-                  ¿Qué tipos de tareas aparecen?
+                <span 
+                  className="text-[11px] uppercase tracking-wider font-black text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200"
+                  aria-label="¿Qué tipos de tareas aparecen?"
+                >
+                  🧩 ¿Qué tipo de tareas aparecen?
                 </span>
                 <span className="text-[11px] text-slate-500 font-semibold">
-                  Calificación requerida · EIL · MTEySS
+                  EIL · Encuesta de Indicadores Laborales · MTEySS
                 </span>
               </div>
 
@@ -418,10 +439,16 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
               ) : (
                 <div className="space-y-3 pt-1">
                   <div>
-                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                      Calificación requerida para la tarea
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed max-w-2xl">
+                    {/* Explicación sencilla de primer nivel */}
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                      La EIL permite observar la composición de los puestos según el tipo de tarea que realizan.
+                    </p>
+                    {/* Aclaración conceptual obligatoria visible */}
+                    <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg bg-purple-100/70 border border-purple-200 text-[11px] text-purple-950 font-bold">
+                      <Info className="w-3.5 h-3.5 text-purple-700 flex-shrink-0" />
+                      <span>La clasificación describe la tarea del puesto, no los estudios o títulos de la persona.</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2 leading-relaxed max-w-2xl">
                       {isAgrupada
                         ? 'En la EIL, Comercio, Restaurantes y Hoteles se informan de forma agrupada e indivisible.'
                         : 'Distribución de ocupados según el tipo de tarea requerida por la empresa en el Gran Jujuy.'}
@@ -498,7 +525,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
               <strong>Distinción conceptual obligatoria:</strong> Las categorías de la EIL describen la <strong>calificación de la tarea requerida por la empresa</strong> en el puesto.
             </p>
             <p className="text-slate-600">
-              <strong>NO representan automáticamente el nivel educativo formal de las personas</strong> ni constituyen vacantes abiertas ni ofertas de estudio.
+              <strong>NO representan automáticamente el nivel educativo formal de las personas</strong>, ni constituyen vacantes abiertas ni ofertas de estudio, ni sugerencias sobre qué carreras o profesiones elegir.
             </p>
           </div>
         )}

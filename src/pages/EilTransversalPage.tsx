@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { EILDataset } from '../types';
 import { formatNumber } from '../utils/formatters';
-import { Users, Search, AlertCircle, Info, Calendar } from 'lucide-react';
+import { Users, Search, AlertCircle, Calendar } from 'lucide-react';
 import defaultEil from '../../data/eil.json';
 
 interface EilTransversalPageProps {
@@ -30,16 +30,20 @@ export const EilTransversalPage: React.FC<EilTransversalPageProps> = ({ eilData 
   return (
     <div className="space-y-8 py-6">
       {/* Encabezado */}
-      <div className="border-b border-slate-200 pb-6">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-800 text-xs font-semibold mb-2">
-          <Info className="w-3.5 h-3.5" />
-          <span>Información Transversal del Aglomerado Gran Jujuy</span>
+      <div className="border-b border-slate-200 pb-6 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs uppercase tracking-wider font-extrabold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+            🧩 ¿Qué tipo de tareas aparecen en Gran Jujuy?
+          </span>
+          <span className="text-xs text-slate-500 font-semibold">
+            EIL · Encuesta de Indicadores Laborales · MTEySS
+          </span>
         </div>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
           Dinámica Laboral y Demanda en Gran Jujuy (EIL)
         </h1>
         <p className="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
-          Indicadores globales de calificación de la tarea y demanda laboral relevados por el Ministerio de Trabajo (MTEySS) en empresas privadas formales de 5 y más ocupados.
+          Indicadores globales de calificación de la tarea y demanda laboral relevados por el Ministerio de Trabajo (MTEySS) en empresas privadas formales de 5 y más ocupados. La clasificación describe la tarea requerida para el puesto, no los estudios o títulos de la persona.
         </p>
       </div>
 
