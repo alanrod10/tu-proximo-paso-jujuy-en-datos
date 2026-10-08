@@ -4,6 +4,7 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/tu-proximo-paso-jujuy-en-datos/',
   plugins: [react()],
   resolve: {
     alias: {
