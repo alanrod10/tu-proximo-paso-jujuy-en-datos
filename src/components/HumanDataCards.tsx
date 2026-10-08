@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Area, TipoTareaInteres, PBGDataset, OEDEDataset, EILDataset, MIPDataset } from '../types';
-import { formatNumber, formatCurrencyMiles } from '../utils/formatters';
+import { formatNumber } from '../utils/formatters';
 import { 
   TrendingUp, 
   Users, 
@@ -119,10 +119,13 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
               {/* Número visual principal */}
               <div className="pt-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                    {pbgSharePctNum > 0 ? `Aproximadamente ${pbgSharePct}%` : 'Actividad Relevada'}
+                  <h3 
+                    className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight"
+                    aria-label={`Aproximadamente ${pbgSharePct}% del PBG provincial`}
+                  >
+                    {pbgSharePctNum > 0 ? `Aporta aproximadamente el ${pbgSharePct}%` : 'Actividad Relevada'}
                   </h3>
-                  <span className="text-xs text-slate-500 font-medium">del total provincial</span>
+                  <span className="text-sm font-bold text-slate-600">del PBG provincial</span>
                 </div>
 
                 {/* Aclaración metodológica obligatoria O-01 (Cálculo derivado) */}
@@ -149,10 +152,15 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
                 </div>
               )}
 
-              {/* Valor absoluto registrado */}
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl pt-1">
-                Valor anual registrado en el último período: <strong>${formatCurrencyMiles(totalValConstante)}</strong> miles a precios constantes de 2004 (${formatCurrencyMiles(totalValCorriente)} miles a precios corrientes de {latestPbgYear}*).
-              </p>
+              {/* Valor absoluto registrado legible y sin $$ */}
+              <div className="pt-2 space-y-1 max-w-2xl">
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  Valor registrado: <strong>$ {formatNumber(totalValConstante / 1000, 2)} millones</strong> de pesos de 2004 ({latestPbgYear}*).
+                </p>
+                <p className="text-[11px] text-slate-500 font-mono">
+                  Unidad oficial: {formatNumber(totalValConstante, 0)} miles de pesos de 2004 · precios constantes · fuente DiPEC ($ {formatNumber(totalValCorriente / 1000, 2)} millones a precios corrientes)
+                </p>
+              </div>
             </div>
           </div>
 
@@ -215,8 +223,11 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
 
               {/* Explicación sencilla de primer nivel */}
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                Estos datos muestran puestos de trabajo asalariados privados registrados formalmente en la seguridad social. Son puestos de trabajo, no necesariamente personas.
+                Son puestos de trabajo asalariados del sector privado registrados formalmente en la seguridad social. Son puestos de trabajo, no necesariamente personas.
               </p>
+              <span className="text-xs text-slate-500 font-medium block">
+                Un puesto de trabajo no equivale necesariamente a una persona.
+              </span>
 
               {isA10 ? (
                 <div className="space-y-1 pt-1">
@@ -320,40 +331,61 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
                     {/* Directo */}
                     <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex flex-col justify-between">
                       <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800 block">
                           Empleo Directo
                         </span>
                         <div className="text-2xl font-black text-slate-900 mt-1">
                           {primaryMipSector.empleo_directo_por_millon ? formatNumber(primaryMipSector.empleo_directo_por_millon, 2) : '—'}
                         </div>
                       </div>
-                      <span className="text-[10px] text-slate-500 mt-2">Puestos directos por cada $1M de producción (VBP)</span>
+                      <div className="mt-2 space-y-0.5">
+                        <span className="text-[10px] text-slate-600 font-semibold block">
+                          Puestos directos por cada $1M de producción (VBP)
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-medium block">
+                          Coeficiente directo · MIP
+                        </span>
+                      </div>
                     </div>
 
                     {/* Indirecto */}
                     <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex flex-col justify-between">
                       <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800 block">
                           Empleo Indirecto
                         </span>
                         <div className="text-2xl font-black text-slate-900 mt-1">
                           {primaryMipSector.empleo_indirecto_por_millon ? formatNumber(primaryMipSector.empleo_indirecto_por_millon, 2) : '—'}
                         </div>
                       </div>
-                      <span className="text-[10px] text-slate-500 mt-2">Relación indirecta en proveedores por cada $1M de producción (VBP)</span>
+                      <div className="mt-2 space-y-0.5">
+                        <span className="text-[10px] text-slate-600 font-semibold block">
+                          Relación indirecta en proveedores por cada $1M de producción (VBP)
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-medium block">
+                          Coeficiente indirecto · MIP
+                        </span>
+                      </div>
                     </div>
 
                     {/* Total */}
                     <div className="p-4 rounded-2xl bg-indigo-100/70 border border-indigo-200 flex flex-col justify-between shadow-2xs">
                       <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-900">
-                          Multiplicador Total
+                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-900 block">
+                          Empleo total relacionado
                         </span>
                         <div className="text-2xl font-black text-indigo-950 mt-1">
                           {primaryMipSector.multiplicador_total_por_millon ? formatNumber(primaryMipSector.multiplicador_total_por_millon, 2) : '—'}
                         </div>
                       </div>
-                      <span className="text-[10px] text-indigo-800 mt-2 font-medium">Coeficiente total por cada $1M de producción (VBP)</span>
+                      <div className="mt-2 space-y-0.5">
+                        <span className="text-[10px] text-indigo-900 font-semibold block">
+                          {primaryMipSector.multiplicador_total_por_millon ? formatNumber(primaryMipSector.multiplicador_total_por_millon, 2) : '—'} puestos por cada $1M de producción
+                        </span>
+                        <span className="text-[9px] text-indigo-700/80 font-medium block">
+                          Coeficiente total de empleo · MIP
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -421,19 +453,19 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
               {isPrimaria ? (
                 <div className="space-y-1 pt-1">
                   <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
-                    Actividad excluida del relevamiento urbano
+                    Esta actividad no está incluida en este relevamiento.
                   </h3>
                   <div className="p-3 rounded-2xl bg-purple-50 border border-purple-200 text-xs text-purple-900 leading-relaxed">
-                    La EIL releva empresas de 5 o más trabajadores en el Aglomerado Gran Jujuy. Por diseño muestral, las actividades primarias están excluidas del operativo. <strong>Esto no implica valor cero de empleo.</strong>
+                    La EIL excluye las actividades primarias por diseño de su muestra en el Aglomerado Gran Jujuy. Esta exclusión metodológica no implica ausencia de actividad laboral ni valor cero de empleo.
                   </div>
                 </div>
               ) : isA10 ? (
                 <div className="space-y-1 pt-1">
                   <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
-                    Sector público no contemplado en EIL
+                    Esta actividad no está incluida en este relevamiento.
                   </h3>
                   <div className="p-3 rounded-2xl bg-purple-50 border border-purple-200 text-xs text-purple-900 leading-relaxed">
-                    La EIL investiga exclusivamente empresas del sector privado. No releva la administración pública provincial.
+                    La EIL investiga exclusivamente empresas del sector privado en el Aglomerado Gran Jujuy. No releva la administración pública provincial.
                   </div>
                 </div>
               ) : (
@@ -553,7 +585,7 @@ export const HumanDataCards: React.FC<HumanDataCardsProps> = ({
 
               <div>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  Más de dos décadas de trayectoria registrada
+                  Podés comparar cómo evolucionó esta actividad a lo largo de los años
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed max-w-2xl">
                   En economía, mirar un solo período puede ser insuficiente. La plataforma permite observar el comportamiento de esta actividad en 21 años continuos de PBG (2004–2024*) y más de 100 trimestres de empleo formal registrado en OEDE.
