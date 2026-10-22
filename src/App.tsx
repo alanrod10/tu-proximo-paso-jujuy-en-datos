@@ -39,7 +39,7 @@ const LoadingSkeleton: React.FC = () => (
 
 export const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<
-    'inicio' | 'asistente' | 'resultado' | 'areas' | 'detalle' | 'transversal' | 'metodologia'
+    'inicio' | 'asistente' | 'resultado' | 'areas' | 'comparador' | 'detalle' | 'transversal' | 'metodologia'
   >('inicio');
   const [selectedAreaId, setSelectedAreaId] = useState<AreaId>('A01');
   const [preferences, setPreferences] = useState<PreferenciasExploracion>({
@@ -50,18 +50,78 @@ export const App: React.FC = () => {
   });
 
   const areas = areasJson as Area[];
+  const validAreaIds: AreaId[] = ['A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12'];
+
+  // Sincronización bidireccional con el historial del navegador (Hash Router)
+  const parseHash = React.useCallback(() => {
+    const raw = window.location.hash.replace(/^#\/?/, '');
+    if (!raw) return null;
+
+    if (raw.startsWith('detalle/') || raw.startsWith('area/')) {
+      const parts = raw.split('/');
+      const aid = parts[1]?.toUpperCase() as AreaId;
+      if (validAreaIds.includes(aid)) {
+        return { view: 'detalle' as const, areaId: aid };
+      }
+      return { view: 'areas' as const };
+    }
+
+    const knownViews = ['inicio', 'asistente', 'resultado', 'areas', 'comparador', 'detalle', 'transversal', 'metodologia'] as const;
+    if ((knownViews as readonly string[]).includes(raw)) {
+      return { view: raw as typeof knownViews[number] };
+    }
+
+    return null;
+  }, []);
+
+  // Carga inicial y escucha de cambios en el historial (Back / Forward)
+  React.useEffect(() => {
+    const initial = parseHash();
+    if (initial) {
+      setCurrentView(initial.view);
+      if (initial.areaId) setSelectedAreaId(initial.areaId);
+    }
+
+    const handleHashChange = () => {
+      const match = parseHash();
+      if (match) {
+        setCurrentView(match.view);
+        if (match.areaId) setSelectedAreaId(match.areaId);
+      } else {
+        setCurrentView('inicio');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [parseHash]);
+
+  const updateHashAndState = (view: string, areaId?: AreaId) => {
+    let targetHash = `#${view}`;
+    if (view === 'detalle') {
+      const aid = areaId || selectedAreaId;
+      targetHash = `#detalle/${aid}`;
+    }
+
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
+    }
+  };
 
   const handleNavigate = (view: string, param?: string) => {
+    const targetArea = (view === 'detalle' && param) ? (param.toUpperCase() as AreaId) : selectedAreaId;
     if (view === 'detalle' && param) {
-      setSelectedAreaId(param as AreaId);
+      setSelectedAreaId(targetArea);
     }
     setCurrentView(view as any);
+    updateHashAndState(view, targetArea);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectArea = (areaId: AreaId) => {
     setSelectedAreaId(areaId);
     setCurrentView('detalle');
+    updateHashAndState('detalle', areaId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -71,18 +131,25 @@ export const App: React.FC = () => {
       setSelectedAreaId(newPrefs.areasSeleccionadas[0]);
     }
     setCurrentView('resultado');
+    updateHashAndState('resultado');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleViewTechnicalDetails = (areaId: AreaId) => {
     setSelectedAreaId(areaId);
     setCurrentView('detalle');
+    updateHashAndState('detalle', areaId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
-      <Header currentView={currentView} onNavigate={handleNavigate} />
+      <Header
+        currentView={currentView}
+        onNavigate={handleNavigate}
+        areas={areas}
+        onSelectArea={handleSelectArea}
+      />
 
       <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
         <Suspense fallback={<LoadingSkeleton />}>
@@ -93,6 +160,7 @@ export const App: React.FC = () => {
               onExploreAreas={() => handleNavigate('areas')}
               onSelectArea={handleSelectArea}
               onNavigateMethodology={() => handleNavigate('metodologia')}
+              onNavigateTransversal={() => handleNavigate('transversal')}
             />
           )}
 
@@ -121,6 +189,14 @@ export const App: React.FC = () => {
             <AreasExplorerPage
               areas={areas}
               onSelectArea={handleSelectArea}
+            />
+          )}
+
+          {currentView === 'comparador' && (
+            <AreasExplorerPage
+              areas={areas}
+              onSelectArea={handleSelectArea}
+              initialMode="comparador"
             />
           )}
 

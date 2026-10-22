@@ -1,11 +1,27 @@
 import React, { useState } from 'react';
-import { Area, AreaId, PBGDataset, OEDEDataset, EILDataset, MIPDataset, Correspondencia } from '../types';
+import {
+  Area,
+  AreaId,
+  PBGDataset,
+  OEDEDataset,
+  EILDataset,
+  MIPDataset,
+  Correspondencia
+} from '../types';
 import { AreaIcon } from '../utils/iconHelper';
-import { MethodWarning } from '../components/MethodWarning';
-import { MissingDataBadge } from '../components/MissingDataBadge';
-import { formatNumber, formatCurrencyMiles, formatPercent } from '../utils/formatters';
-import { ArrowLeft, FileText, Calendar, Building, Info, HelpCircle, ChevronLeft, ChevronRight, Home } from 'lucide-react';
-import { HumanDataCards } from '../components/HumanDataCards';
+import { InteractiveChart, ChartDataPoint } from '../components/InteractiveChart';
+import { MetricExplainer } from '../components/MetricExplainer';
+import { formatNumber, formatCurrencyMiles } from '../utils/formatters';
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Users,
+  AlertCircle,
+  ShieldCheck,
+  Info
+} from 'lucide-react';
 
 import defaultAreas from '../../data/areas.json';
 import defaultPbg from '../../data/pbg.json';
@@ -35,883 +51,850 @@ export const AreaDetailPage: React.FC<AreaDetailPageProps> = ({
   mipData = defaultMip as MIPDataset,
   correspondencias = defaultCorrespondencias as Correspondencia[],
   onBack,
-  onNavigateArea
+  onNavigateArea,
 }) => {
-  const [activeTab, setActiveTab] = useState<'todos' | 'pbg' | 'oede' | 'eil' | 'mip'>('todos');
-  const [pbgViewMode, setPbgViewMode] = useState<'constante' | 'corriente'>('constante');
-  const [pbgPeriodRange, setPbgPeriodRange] = useState<'reciente' | 'historico' | 'completo'>('reciente');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'pbg' | 'oede' | 'eil' | 'mip' | 'trazabilidad'>('resumen');
+  const [pbgMode, setPbgMode] = useState<'constante' | 'corriente'>('constante');
+  const [pbgRange, setPbgRange] = useState<'ultimos5' | 'historica'>('historica');
+  const [oedeRange, setOedeRange] = useState<'ultimos3' | 'completa'>('completa');
 
+  const currentArea = areas.find((a) => a.area_id === areaId);
   const currentIndex = areas.findIndex((a) => a.area_id === areaId);
   const prevArea = currentIndex > 0 ? areas[currentIndex - 1] : areas[areas.length - 1];
   const nextArea = currentIndex < areas.length - 1 ? areas[currentIndex + 1] : areas[0];
 
-  const currentArea = areas.find((a) => a.area_id === areaId);
   if (!currentArea) {
     return (
-      <div className="py-12 text-center">
-        <p className="text-slate-600 mb-4">Área no encontrada.</p>
-        <button onClick={onBack} className="btn-primary">Volver al explorador</button>
+      <div className="py-16 text-center space-y-4">
+        <p className="text-slate-600 font-medium">Área no encontrada.</p>
+        <button onClick={onBack} className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
+          Volver al Explorador de Áreas
+        </button>
       </div>
     );
   }
 
-  // 1. FILTRAR PBG
+  // 1. PBG
   const pbgRecords = pbgData.series
     .filter((r) => r.area_id === areaId)
-    .sort((a, b) => b.periodo_anio - a.periodo_anio);
-  
-  // Agrupar PBG por rama si el área tiene múltiples ramas (ej A09: J + K, A12: N + O)
-  const pbgBranches = Array.from(new Set(pbgRecords.map((r) => r.codigo_rama)));
-  const latestPbgYear = pbgRecords.length > 0 ? pbgRecords[0].periodo_anio : 2024;
-  const latestPbgRecords = pbgRecords.filter((r) => r.periodo_anio === latestPbgYear);
+    .sort((a, b) => a.periodo_anio - b.periodo_anio);
 
-  // 2. FILTRAR OEDE
-  const isOEDEAvailable = areaId !== 'A10';
+  const latestPbgYear = pbgRecords.length > 0 ? Math.max(...pbgRecords.map((r) => r.periodo_anio)) : 2024;
+  const latestPbgRecs = pbgRecords.filter((r) => r.periodo_anio === latestPbgYear);
+  const latestPbgConstante = latestPbgRecs.reduce((acc, r) => acc + (r.valor_constante || 0), 0);
+  const latestPbgCorriente = latestPbgRecs.reduce((acc, r) => acc + (r.valor_corriente || 0), 0);
+
+  const totalProvincialPbgConstante = pbgData.series
+    .find((r) => r.codigo_rama === 'TOTAL' && r.periodo_anio === latestPbgYear)?.valor_constante ?? null;
+  const pbgSharePct = (totalProvincialPbgConstante !== null && totalProvincialPbgConstante > 0)
+    ? ((latestPbgConstante / totalProvincialPbgConstante) * 100).toFixed(1)
+    : 's/d';
+
+  // Datos para gráfico PBG
+  const filteredPbgSeries = pbgRange === 'ultimos5'
+    ? pbgRecords.filter((r) => r.periodo_anio >= latestPbgYear - 4)
+    : pbgRecords;
+
+  // Agrupar años si hay múltiples ramas
+  const pbgYears = Array.from(new Set(filteredPbgSeries.map((r) => r.periodo_anio))).sort((a, b) => a - b);
+  const pbgChartPoints: ChartDataPoint[] = pbgYears.map((year) => {
+    const recsOfYear = filteredPbgSeries.filter((r) => r.periodo_anio === year);
+    const sumVal = recsOfYear.reduce(
+      (acc, r) => acc + ((pbgMode === 'constante' ? r.valor_constante : r.valor_corriente) || 0),
+      0
+    );
+    const isProv = recsOfYear.some((r) => r.es_provisorio);
+    return {
+      label: year.toString(),
+      value: sumVal > 0 ? sumVal : null,
+      isProvisional: isProv,
+      tooltipExtra: pbgMode === 'constante' ? 'Precios constantes de 2004' : 'Precios corrientes',
+    };
+  });
+
+  // 2. OEDE
+  const isOedeAvailable = areaId !== 'A10';
   const oedeRecords = oedeData.series.filter((r) => r.area_id === areaId);
-  
-  // Ramas letra de OEDE para esta área
-  const oedeLetterBranches = oedeRecords.filter((r) => r.tipo_nivel === 'LETRA');
-  // Ramas a 2 dígitos de OEDE
-  const oedeDigitBranches = oedeRecords.filter((r) => r.tipo_nivel === 'DIGITO_2');
-  
-  // Último trimestre con datos disponibles (ej. 1° Trim 2026 o 4° Trim 2025)
-  const oedePeriods = Array.from(new Set(oedeRecords.map((r) => r.periodo)));
+  const oedeLetterRecords = oedeRecords.filter((r) => r.tipo_nivel === 'LETRA');
+  const oedePeriods = Array.from(new Set(oedeLetterRecords.map((r) => r.periodo)));
   const latestOedePeriod = oedePeriods.length > 0 ? oedePeriods[oedePeriods.length - 1] : '';
-  const latestOedeLetters = oedeLetterBranches.filter((r) => r.periodo === latestOedePeriod);
+  const latestOedeLetters = oedeLetterRecords.filter((r) => r.periodo === latestOedePeriod);
 
-  // 3. FILTRAR EIL
-  const isEILAvailable = !['A01', 'A02', 'A10'].includes(areaId);
-  const isEILAgrupada = ['A06', 'A07'].includes(areaId);
-  
-  const eilKey = isEILAgrupada ? 'A06_A07_AGRUPADA' : areaId;
-  const eilBranchRecords = eilData.tabla_3_9_2_evolucion_y_ramas.filter(
-    (r) => r.area_id === eilKey
-  );
+  const totalPuestosOede = isOedeAvailable
+    ? latestOedeLetters.reduce((acc, r) => acc + (r.puestos_trabajo || 0), 0)
+    : null;
+  const hasOedeSecret = latestOedeLetters.some((r) => r.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO');
 
-  // Último trimestre EIL disponible
+  // Datos para gráfico OEDE
+  const recentPeriods = oedeRange === 'ultimos3' ? oedePeriods.slice(-12) : oedePeriods;
+  const oedeChartPoints: ChartDataPoint[] = recentPeriods.map((period) => {
+    const recs = oedeLetterRecords.filter((r) => r.periodo === period);
+    const hasSecret = recs.some((r) => r.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO');
+    const allNull = recs.length > 0 && recs.every((r) => r.puestos_trabajo === null);
+    const sumVal = allNull ? null : recs.reduce((acc, r) => acc + (r.puestos_trabajo || 0), 0);
+
+    return {
+      label: period,
+      value: sumVal,
+      isSecret: hasSecret,
+      tooltipExtra: hasSecret ? 'Contiene subramas bajo secreto estadístico oficial' : undefined,
+    };
+  });
+
+  // 3. EIL
+  const isEilPrimary = ['A01', 'A02'].includes(areaId);
+  const isEilPublic = areaId === 'A10';
+  const isEilAgrupada = ['A06', 'A07'].includes(areaId);
+  const isEilAvailable = !isEilPrimary && !isEilPublic;
+
+  const eilKey = isEilAgrupada ? 'A06_A07_AGRUPADA' : areaId;
+  const eilBranchRecords = eilData.tabla_3_9_2_evolucion_y_ramas.filter((r) => r.area_id === eilKey);
   const eilPeriods = Array.from(new Set(eilBranchRecords.map((r) => r.periodo)));
   const latestEilPeriod = eilPeriods.length > 0 ? eilPeriods[eilPeriods.length - 1] : '';
-  const latestEilIndex = eilBranchRecords.find(
-    (r) => r.periodo === latestEilPeriod && r.bloque === 'INDICE_POR_RAMA'
-  );
-  const latestEilVarTrim = eilBranchRecords.find(
-    (r) => r.periodo === latestEilPeriod && r.bloque === 'VARIACION_TRIMESTRAL_POR_RAMA'
-  );
-  const latestEilVarAnual = eilBranchRecords.find(
-    (r) => r.periodo === latestEilPeriod && r.bloque === 'VARIACION_ANUAL_POR_RAMA'
-  );
+  const latestEilIndex = eilBranchRecords.find((r) => r.periodo === latestEilPeriod && r.bloque === 'INDICE_POR_RAMA');
+  const latestEilVarAnual = eilBranchRecords.find((r) => r.periodo === latestEilPeriod && r.bloque === 'VARIACION_ANUAL_POR_RAMA');
 
-  // 4. FILTRAR MIP
+  // 4. MIP
   const mipSectors = mipData.sectores.filter((s) => s.area_id === areaId);
+  const primaryMip = mipSectors.length > 0 ? mipSectors[0] : null;
 
-  // 5. CORRESPONDENCIAS DEL ÁREA
-  const areaCorrespondencias = correspondencias.filter((c) => c.area_id === areaId);
+  // 5. Correspondencias
+  const areaCorrs = correspondencias.filter((c) => c.area_id === areaId);
 
   return (
-    <div className="space-y-8 py-6">
-      {/* Breadcrumb de navegación */}
-      <nav aria-label="Ruta de navegación" className="flex items-center gap-2 text-xs text-slate-500">
-        <button
-          onClick={onBack}
-          className="hover:text-brand-700 transition-colors flex items-center gap-1 font-medium"
-        >
-          <Home className="w-3.5 h-3.5" />
-          <span>Inicio</span>
-        </button>
-        <span>/</span>
-        <button
-          onClick={onBack}
-          className="hover:text-brand-700 transition-colors font-medium"
-        >
-          12 Áreas
-        </button>
-        <span>/</span>
-        <span className="font-semibold text-slate-800">
-          {currentArea.area_id} — {currentArea.nombre}
-        </span>
-      </nav>
-
-      {/* Barra de navegación superior con selector de área y flechas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-brand-700 transition-colors w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Volver al listado de áreas</span>
-        </button>
-
-        {/* Navegación secuencial y rápida entre las 12 áreas */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full text-xs">
-          <button
-            onClick={() => onNavigateArea(prevArea.area_id)}
-            className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-700 transition-colors flex items-center gap-1"
-            title={`Área anterior: ${prevArea.area_id} — ${prevArea.nombre}`}
-            aria-label={`Ir al área anterior ${prevArea.area_id}`}
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="font-mono font-bold hidden sm:inline">{prevArea.area_id}</span>
-          </button>
-
-          <span className="text-slate-300 mx-0.5">|</span>
-
-          {areas.map((a) => (
-            <button
-              key={a.area_id}
-              onClick={() => onNavigateArea(a.area_id)}
-              className={`px-2 py-1 rounded font-mono font-bold transition-all ${
-                a.area_id === areaId
-                  ? 'bg-brand-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-              title={a.nombre}
-            >
-              {a.area_id}
-            </button>
-          ))}
-
-          <span className="text-slate-300 mx-0.5">|</span>
-
-          <button
-            onClick={() => onNavigateArea(nextArea.area_id)}
-            className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-700 transition-colors flex items-center gap-1"
-            title={`Área siguiente: ${nextArea.area_id} — ${nextArea.nombre}`}
-            aria-label={`Ir al área siguiente ${nextArea.area_id}`}
-          >
-            <span className="font-mono font-bold hidden sm:inline">{nextArea.area_id}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Hero del Área */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-brand-50 text-brand-700 border border-brand-100 flex items-center justify-center flex-shrink-0 shadow-xs">
-            <AreaIcon name={currentArea.icono} size={32} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-brand-100 text-brand-800">
-                {currentArea.area_id}
-              </span>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Área Conceptual
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              {currentArea.nombre}
-            </h1>
-            <p className="text-sm text-slate-600 mt-2 max-w-3xl leading-relaxed">
-              {currentArea.descripcion}
-            </p>
-            <div className="pt-3 flex flex-wrap gap-2 items-center">
-              <a
-                href="#datos-detallados"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
-              >
-                <FileText className="w-3.5 h-3.5 text-brand-600" />
-                <span>Saltar a fichas técnicas y tablas (Nivel 2)</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-8 py-6 sm:py-8">
       {/* ========================================================================= */}
-      {/* NIVEL 1: RESUMEN VISUAL Y HUMANO (3–5 TARJETAS CLAVE) */}
+      {/* 1. NAVEGACIÓN Y ENCABEZADO DE ÁREA                                        */}
       {/* ========================================================================= */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wider font-extrabold text-brand-700 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">
-            Nivel 1 · Resumen de la Actividad
-          </span>
-          <span className="text-xs text-slate-400">
-            Estadísticas oficiales explicadas de forma clara
-          </span>
-        </div>
+        {/* Barra superior de navegación entre áreas y botón atrás */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs border-b border-slate-200 pb-3">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 text-brand-700 hover:text-brand-900 font-bold transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Volver al Explorador de Áreas</span>
+          </button>
 
-        <HumanDataCards
-          area={currentArea}
-          pbgData={pbgData}
-          oedeData={oedeData}
-          eilData={eilData}
-          mipData={mipData}
-          onViewTechnicalDetails={(tab) => {
-            if (tab) setActiveTab(tab);
-            document.getElementById('datos-detallados')?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        />
-      </div>
-
-      {/* ========================================================================= */}
-      {/* NIVEL 2: DATOS TÉCNICOS DETALLADOS, TABLAS Y METODOLOGÍA */}
-      {/* ========================================================================= */}
-      <div id="datos-detallados" className="pt-8 border-t border-slate-200 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <span className="text-xs uppercase tracking-wider font-extrabold text-slate-400">
-              Nivel 2 · Series Estadísticas Completas
+          {/* Paginador rápido entre las 12 áreas */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigateArea(prevArea.area_id)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium transition-colors"
+              title={`Ir a ${prevArea.nombre}`}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{prevArea.area_id}</span>
+            </button>
+            <span className="font-mono font-bold text-slate-400">
+              {currentArea.area_id} / 12
             </span>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-              Fichas Técnicas y Tablas por Fuente Oficial
-            </h2>
+            <button
+              onClick={() => onNavigateArea(nextArea.area_id)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium transition-colors"
+              title={`Ir a ${nextArea.nombre}`}
+            >
+              <span className="hidden sm:inline">{nextArea.area_id}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <span className="text-xs text-slate-500 font-medium">
-            Seleccioná una fuente para filtrar sus cuadros
-          </span>
         </div>
-      </div>
 
-      {/* Tabs de Filtro por Fuente */}
-      <div className="flex items-center gap-2 overflow-x-auto border-b border-slate-200 pb-2 text-sm font-medium">
-        <button
-          onClick={() => setActiveTab('todos')}
-          className={`px-4 py-2 rounded-xl transition-all ${
-            activeTab === 'todos'
-              ? 'bg-slate-900 text-white font-semibold shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          Todas las Fuentes
-        </button>
-        <button
-          onClick={() => setActiveTab('pbg')}
-          className={`px-4 py-2 rounded-xl transition-all ${
-            activeTab === 'pbg'
-              ? 'bg-emerald-700 text-white font-semibold shadow-xs'
-              : 'text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200/60'
-          }`}
-        >
-          PBG (DiPEC)
-        </button>
-        <button
-          onClick={() => setActiveTab('oede')}
-          className={`px-4 py-2 rounded-xl transition-all ${
-            activeTab === 'oede'
-              ? 'bg-blue-700 text-white font-semibold shadow-xs'
-              : 'text-blue-800 bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200/60'
-          }`}
-        >
-          OEDE (SIPA)
-        </button>
-        <button
-          onClick={() => setActiveTab('eil')}
-          className={`px-4 py-2 rounded-xl transition-all ${
-            activeTab === 'eil'
-              ? 'bg-purple-700 text-white font-semibold shadow-xs'
-              : 'text-purple-800 bg-purple-50/70 hover:bg-purple-100/70 border border-purple-200/60'
-          }`}
-        >
-          EIL (Gran Jujuy)
-        </button>
-        <button
-          onClick={() => setActiveTab('mip')}
-          className={`px-4 py-2 rounded-xl transition-all ${
-            activeTab === 'mip'
-              ? 'bg-indigo-700 text-white font-semibold shadow-xs'
-              : 'text-indigo-800 bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-200/60'
-          }`}
-        >
-          MIP (Base 2015)
-        </button>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 1. MÓDULO PBG (DiPEC) */}
-      {/* ========================================================================= */}
-      {(activeTab === 'todos' || activeTab === 'pbg') && (
-        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs uppercase tracking-wider font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  💰 ¿Cuánto aporta esta actividad a Jujuy?
-                </span>
-                <span className="text-xs text-slate-500 font-semibold">
-                  PBG · Producto Bruto Geográfico · DiPEC
-                </span>
+        {/* Hero Card del Área con 3 KPIs Clave */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center shrink-0 border border-brand-100 shadow-2xs">
+                <AreaIcon name={currentArea.icono} size={32} />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                Producto Bruto Geográfico (PBG) a Precios Básicos
-              </h2>
-              <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-                El PBG permite observar cuánto valor genera una actividad dentro de la economía de la provincia.
-              </p>
-            </div>
-
-            {/* Selector de modo de precios */}
-            <div className="flex items-center p-1 bg-slate-100 rounded-xl text-xs font-semibold">
-              <button
-                onClick={() => setPbgViewMode('constante')}
-                className={`px-3 py-1.5 rounded-lg transition-all ${
-                  pbgViewMode === 'constante' ? 'bg-white text-emerald-800 shadow-xs' : 'text-slate-600'
-                }`}
-              >
-                Precios Constantes (Base 2004)
-              </button>
-              <button
-                onClick={() => setPbgViewMode('corriente')}
-                className={`px-3 py-1.5 rounded-lg transition-all ${
-                  pbgViewMode === 'corriente' ? 'bg-white text-emerald-800 shadow-xs' : 'text-slate-600'
-                }`}
-              >
-                Precios Corrientes
-              </button>
-            </div>
-          </div>
-
-          <MethodWarning type="pbg-provisorio" />
-
-          {/* Tarjetas con los valores del último año disponible */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {latestPbgRecords.map((rec) => (
-              <div key={rec.id} className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white text-emerald-900 border border-emerald-200">
-                      Rama {rec.codigo_rama}
-                    </span>
-                    <MissingDataBadge status="PROVISORIO" label={`Año ${rec.periodo_anio}*`} />
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm mb-2 leading-snug">
-                    {rec.nombre_rama}
-                  </h3>
-                  <div className="my-3">
-                    <div className="text-2xl font-extrabold text-slate-900">
-                      {pbgViewMode === 'constante'
-                        ? formatCurrencyMiles(rec.valor_constante)
-                        : formatCurrencyMiles(rec.valor_corriente)}
-                    </div>
-                    <span className="text-xs text-slate-500">
-                      {pbgViewMode === 'constante' ? rec.unidad_constante : rec.unidad_corriente}
-                    </span>
-                  </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                    {currentArea.area_id}
+                  </span>
+                  <span className="text-xs uppercase tracking-wider font-extrabold text-brand-600">
+                    Actividad Económica Auditada
+                  </span>
                 </div>
-
-                <div className="pt-3 border-t border-emerald-100/80 text-[11px] text-slate-500 flex items-center justify-between">
-                  <span>Hoja: {pbgViewMode === 'constante' ? 'a Precios Constantes' : 'a Precios Corrientes'}</span>
-                  <span>DiPEC (Actualiz. Agosto 2025)</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Tabla de evolución histórica PBG (Rango configurable 2004-2024*) */}
-          <div className="pt-4 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-emerald-600" />
-                <span>Serie Histórica PBG ({pbgPeriodRange === 'reciente' ? '2015–2024*' : pbgPeriodRange === 'historico' ? '2004–2014' : 'Serie Completa 2004–2024*'})</span>
-              </h3>
-
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-medium">
-                <button
-                  onClick={() => setPbgPeriodRange('reciente')}
-                  className={`px-2.5 py-1 rounded-lg transition-all ${
-                    pbgPeriodRange === 'reciente' ? 'bg-white text-emerald-900 font-bold shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  2015–2024* (Reciente)
-                </button>
-                <button
-                  onClick={() => setPbgPeriodRange('historico')}
-                  className={`px-2.5 py-1 rounded-lg transition-all ${
-                    pbgPeriodRange === 'historico' ? 'bg-white text-emerald-900 font-bold shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  2004–2014
-                </button>
-                <button
-                  onClick={() => setPbgPeriodRange('completo')}
-                  className={`px-2.5 py-1 rounded-lg transition-all ${
-                    pbgPeriodRange === 'completo' ? 'bg-white text-emerald-900 font-bold shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  Completa (2004–2024*)
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-3">Rama</th>
-                    <th className="py-2.5 px-3">Nombre Oficial</th>
-                    {Array.from(new Set(pbgRecords.map((r) => r.periodo_anio)))
-                      .filter((y) => {
-                        if (pbgPeriodRange === 'reciente') return y >= 2015;
-                        if (pbgPeriodRange === 'historico') return y < 2015;
-                        return true;
-                      })
-                      .sort((a, b) => a - b)
-                      .map((year) => (
-                        <th key={year} className="py-2.5 px-3 text-right">
-                          {year}{[2022, 2023, 2024].includes(year) ? '*' : ''}
-                        </th>
-                      ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {pbgBranches.map((branchCode) => {
-                    const branchRecs = pbgRecords.filter((r) => r.codigo_rama === branchCode);
-                    const name = branchRecs.length > 0 ? branchRecs[0].nombre_rama : branchCode;
-                    return (
-                      <tr key={branchCode} className="hover:bg-slate-50/80">
-                        <td className="py-2.5 px-3 font-mono font-bold text-slate-700">{branchCode}</td>
-                        <td className="py-2.5 px-3 font-medium text-slate-800 max-w-[200px] truncate" title={name}>{name}</td>
-                        {Array.from(new Set(pbgRecords.map((r) => r.periodo_anio)))
-                          .filter((y) => {
-                            if (pbgPeriodRange === 'reciente') return y >= 2015;
-                            if (pbgPeriodRange === 'historico') return y < 2015;
-                            return true;
-                          })
-                          .sort((a, b) => a - b)
-                          .map((year) => {
-                            const yRec = branchRecs.find((r) => r.periodo_anio === year);
-                            const val = pbgViewMode === 'constante' ? yRec?.valor_constante : yRec?.valor_corriente;
-                            return (
-                              <td key={year} className="py-2.5 px-3 text-right font-mono text-slate-700">
-                                {formatNumber(val, 0)}
-                              </td>
-                            );
-                          })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-2">
-              * Valores provisorios. Cifras expresadas en {pbgViewMode === 'constante' ? 'Miles de pesos de 2004 (precios constantes base 2004)' : 'Miles de pesos corrientes'}. Fuente: DiPEC.
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 2. MÓDULO OEDE (MTEySS / SIPA) */}
-      {/* ========================================================================= */}
-      {(activeTab === 'todos' || activeTab === 'oede') && (
-        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-          <div className="border-b border-slate-100 pb-4 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs uppercase tracking-wider font-extrabold text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                👥 ¿Cuántos puestos de trabajo registrados hay?
-              </span>
-              <span className="text-xs text-slate-500 font-semibold">
-                OEDE · Empleo privado registrado · SIPA
-              </span>
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              Puestos de Trabajo Asalariados Registrados del Sector Privado
-            </h2>
-            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-              Estos datos muestran puestos de trabajo asalariados privados registrados formalmente en la seguridad social (SIPA). Son puestos de trabajo, no necesariamente personas.
-            </p>
-          </div>
-
-          {!isOEDEAvailable ? (
-            /* CASO ESPECIAL A10: NO MOSTRAR 0 */
-            <div className="space-y-4">
-              <MethodWarning type="oede-a10" />
-              <div className="p-6 rounded-2xl bg-amber-50/40 border border-amber-200 text-center py-10">
-                <div className="inline-flex p-3 rounded-full bg-amber-100 text-amber-800 mb-3">
-                  <Info className="w-6 h-6" />
-                </div>
-                <h3 className="font-bold text-amber-900 text-base mb-1">
-                  Indicador no publicado en esta fuente para Jujuy
-                </h3>
-                <p className="text-xs text-amber-800 max-w-xl mx-auto leading-relaxed">
-                  El OEDE releva exclusivamente el empleo asalariado registrado del sector privado formal. En la publicación oficial para la provincia de Jujuy no se emite una serie para la Rama L (Administración Pública provincial). Metodológicamente se preserva el estado de no disponibilidad y <strong>no se imputa valor cero</strong>.
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+                  {currentArea.nombre}
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed pt-1">
+                  {currentArea.descripcion}
                 </p>
               </div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Tarjetas de Nivel Letra del último período */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {latestOedeLetters.map((rec) => (
-                  <div key={rec.id} className="p-5 rounded-2xl bg-blue-50/50 border border-blue-100 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white text-blue-900 border border-blue-200">
-                          Rama {rec.codigo_rama}
-                        </span>
-                        <MissingDataBadge status={rec.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO' ? 'SIN_DATO_SECRETO_ESTADISTICO' : 'PUBLICADO'} />
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-sm mb-2 leading-snug">
-                        {rec.nombre_rama}
-                      </h3>
-                      <div className="my-3">
-                        <div className="text-2xl font-extrabold text-slate-900">
-                          {rec.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO'
-                            ? 's.d.'
-                            : formatNumber(rec.puestos_trabajo, 0)}
-                        </div>
-                        <span className="text-xs text-slate-500">
-                          {rec.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO'
-                            ? 'Secreto estadístico (Ley 17.622)'
-                            : 'Puestos de trabajo asalariados registrados'}
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="pt-3 border-t border-blue-100/80 text-[11px] text-slate-500 flex items-center justify-between">
-                      <span>Período: <strong className="text-slate-700">{rec.periodo}</strong></span>
-                      <span>OEDE — SIPA</span>
-                    </div>
-                  </div>
-                ))}
+            {/* 3 KPIs Resumidos */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:shrink-0 text-left border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+              {/* KPI PBG */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-800 block">
+                  Aporte PBG 2024*
+                </span>
+                <span className="text-lg font-black text-slate-900 block font-mono">
+                  {pbgSharePct}%
+                </span>
+                <span className="text-[10px] text-slate-400 block">
+                  {formatCurrencyMiles(latestPbgConstante)}
+                </span>
               </div>
 
-              {/* Apertura a 2 dígitos CIIU Rev. 3 */}
-              {oedeDigitBranches.length > 0 && (
-                <div className="pt-4">
-                  <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" />
-                    Desagregación por Rama a 2 Dígitos (Último período: {latestOedePeriod})
-                  </h3>
-                  <div className="overflow-x-auto rounded-xl border border-slate-200">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                        <tr>
-                          <th className="py-2.5 px-3">CIIU 2D</th>
-                          <th className="py-2.5 px-3">Rama Específica</th>
-                          <th className="py-2.5 px-3">Rama Padre</th>
-                          <th className="py-2.5 px-3 text-right">Puestos Registrados</th>
-                          <th className="py-2.5 px-3 text-center">Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {oedeDigitBranches
-                          .filter((r) => r.periodo === latestOedePeriod)
-                          .map((dRec) => (
-                            <tr key={dRec.id} className="hover:bg-slate-50/80">
-                              <td className="py-2.5 px-3 font-mono font-bold text-slate-700">{dRec.codigo_rama}</td>
-                              <td className="py-2.5 px-3 font-medium text-slate-800">{dRec.nombre_rama}</td>
-                              <td className="py-2.5 px-3 font-mono text-slate-500">{dRec.letra_padre}</td>
-                              <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-900">
-                                {dRec.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO'
-                                  ? 's.d.'
-                                  : formatNumber(dRec.puestos_trabajo, 0)}
-                              </td>
-                              <td className="py-2.5 px-3 text-center">
-                                {dRec.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO' ? (
-                                  <MissingDataBadge status="SIN_DATO_SECRETO_ESTADISTICO" label="s.d." />
-                                ) : (
-                                  <span className="text-[11px] text-emerald-700 font-medium">Publicado</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-2">
-                    Nota: s.d. indica secreto estadístico para resguardar la identidad de firmas con pocas unidades operativas en la provincia. Fuente: STEySS - OEDE en base a SIPA.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 3. MÓDULO EIL (MTEySS - Gran Jujuy) */}
-      {/* ========================================================================= */}
-      {(activeTab === 'todos' || activeTab === 'eil') && (
-        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-          <div className="border-b border-slate-100 pb-4 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs uppercase tracking-wider font-extrabold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
-                🧩 ¿Qué tipo de tareas aparecen?
-              </span>
-              <span className="text-xs text-slate-500 font-semibold">
-                EIL · Encuesta de Indicadores Laborales · MTEySS
-              </span>
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              Indicadores de Dinámica Laboral (Aglomerado Gran Jujuy)
-            </h2>
-            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-              La EIL permite observar la composición de los puestos según el tipo de tarea que realizan en empresas de 5 o más ocupados. La clasificación describe la tarea del puesto, no los estudios o títulos de la persona.
-            </p>
-          </div>
-
-          {!isEILAvailable ? (
-            /* CASO ESPECIAL A01, A02, A10: EXCLUSIÓN DE LA MUESTRA */
-            <div>
-              {['A01', 'A02'].includes(areaId) ? (
-                <MethodWarning type="eil-primaria" />
-              ) : (
-                <div className="p-6 rounded-2xl bg-slate-100 text-slate-800 border border-slate-200 text-center py-8">
-                  <h3 className="font-bold text-sm mb-1">Sector Público excluido del relevamiento EIL</h3>
-                  <p className="text-xs text-slate-600 max-w-lg mx-auto">
-                    La Encuesta de Indicadores Laborales releva exclusivamente empresas privadas de 5 y más trabajadores. No incluye la administración pública.
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {isEILAgrupada && <MethodWarning type="eil-agrupada" />}
-
-              {/* Indicadores clave de la rama en EIL */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Índice de Empleo */}
-                <div className="p-5 rounded-2xl bg-purple-50/50 border border-purple-100">
-                  <span className="text-xs font-semibold text-purple-900 uppercase tracking-wider block mb-1">
-                    Índice de Empleo
-                  </span>
-                  <div className="text-2xl font-extrabold text-slate-900 my-2">
-                    {latestEilIndex ? formatNumber(latestEilIndex.valor, 2) : 'Sin dato'}
-                  </div>
-                  <span className="text-xs text-slate-500 block mb-2">
-                    Base Febrero 2015 = 100
-                  </span>
-                  <div className="text-[11px] text-slate-400 pt-2 border-t border-purple-100">
-                    Período: <strong>{latestEilPeriod}</strong>
-                  </div>
-                </div>
-
-                {/* Variación Trimestral */}
-                <div className="p-5 rounded-2xl bg-purple-50/50 border border-purple-100">
-                  <span className="text-xs font-semibold text-purple-900 uppercase tracking-wider block mb-1">
-                    Variación Trimestral
-                  </span>
-                  <div className="text-2xl font-extrabold text-slate-900 my-2">
-                    {latestEilVarTrim ? formatPercent(latestEilVarTrim.valor, 2) : 'Sin dato'}
-                  </div>
-                  <span className="text-xs text-slate-500 block mb-2">
-                    Variación relativa intertrimestral
-                  </span>
-                  <div className="text-[11px] text-slate-400 pt-2 border-t border-purple-100">
-                    Período: <strong>{latestEilPeriod}</strong>
-                  </div>
-                </div>
-
-                {/* Variación Anual */}
-                <div className="p-5 rounded-2xl bg-purple-50/50 border border-purple-100">
-                  <span className="text-xs font-semibold text-purple-900 uppercase tracking-wider block mb-1">
-                    Variación Anual
-                  </span>
-                  <div className="text-2xl font-extrabold text-slate-900 my-2">
-                    {latestEilVarAnual ? formatPercent(latestEilVarAnual.valor, 2) : 'Sin dato'}
-                  </div>
-                  <span className="text-xs text-slate-500 block mb-2">
-                    Variación interanual relativa
-                  </span>
-                  <div className="text-[11px] text-slate-400 pt-2 border-t border-purple-100">
-                    Período: <strong>{latestEilPeriod}</strong>
-                  </div>
-                </div>
+              {/* KPI OEDE */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-blue-800 block">
+                  Puestos SIPA
+                </span>
+                <span className="text-lg font-black text-slate-900 block font-mono">
+                  {totalPuestosOede !== null ? formatNumber(totalPuestosOede) : 'No disp.'}
+                </span>
+                <span className="text-[10px] text-slate-400 block">
+                  {isOedeAvailable ? latestOedePeriod : 'Sector público'}
+                </span>
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-200 flex items-start gap-2">
-                <Info className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong>Rama en la fuente original:</strong> <code>{latestEilIndex?.concepto || 'No disponible'}</code>. Para consultar la calificación de la tarea y la demanda laboral desagregada del conjunto del Gran Jujuy, visitá la sección <button onClick={() => onNavigateArea(areaId)} className="text-purple-700 font-bold underline">EIL Gran Jujuy (Transversal)</button>.
+              {/* KPI MIP */}
+              <div className="col-span-2 sm:col-span-1 space-y-0.5">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-amber-800 block">
+                  Multiplicador MIP
+                </span>
+                <span className="text-lg font-black text-slate-900 block font-mono">
+                  {primaryMip?.multiplicador_total_coef !== null ? primaryMip?.multiplicador_total_coef?.toFixed(2) : '—'}
+                </span>
+                <span className="text-[10px] text-slate-400 block">
+                  Base 2015
                 </span>
               </div>
             </div>
-          )}
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. BARRA DE PESTAÑAS ADHESIVAS (STICKY TABS)                              */}
+      {/* ========================================================================= */}
+      <div className="sticky top-16 z-30 bg-slate-50/95 backdrop-blur-md pt-2 pb-2 border-b border-slate-200">
+        <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-semibold py-1">
+          <button
+            onClick={() => setActiveTab('resumen')}
+            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'resumen'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-200/70'
+            }`}
+          >
+            🌟 Resumen Clave
+          </button>
+
+          <button
+            onClick={() => setActiveTab('pbg')}
+            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'pbg'
+                ? 'bg-emerald-700 text-white shadow-xs font-bold'
+                : 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/60'
+            }`}
+          >
+            📊 Producción (PBG)
+          </button>
+
+          <button
+            onClick={() => setActiveTab('oede')}
+            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'oede'
+                ? 'bg-blue-700 text-white shadow-xs font-bold'
+                : 'text-blue-800 bg-blue-50 hover:bg-blue-100/80 border border-blue-200/60'
+            }`}
+          >
+            👥 Empleo Registrado (OEDE)
+          </button>
+
+          <button
+            onClick={() => setActiveTab('eil')}
+            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'eil'
+                ? 'bg-purple-700 text-white shadow-xs font-bold'
+                : 'text-purple-800 bg-purple-50 hover:bg-purple-100/80 border border-purple-200/60'
+            }`}
+          >
+            🧩 Dinámica Laboral (EIL)
+          </button>
+
+          <button
+            onClick={() => setActiveTab('mip')}
+            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'mip'
+                ? 'bg-amber-700 text-white shadow-xs font-bold'
+                : 'text-amber-800 bg-amber-50 hover:bg-amber-100/80 border border-amber-200/60'
+            }`}
+          >
+            🔗 Conexiones (MIP 2015)
+          </button>
+
+          <button
+            onClick={() => setActiveTab('trazabilidad')}
+            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'trazabilidad'
+                ? 'bg-slate-800 text-white shadow-xs font-bold'
+                : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300'
+            }`}
+          >
+            📋 Trazabilidad
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. CONTENIDO DE LAS PESTAÑAS INTERACTIVAS                                */}
+      {/* ========================================================================= */}
+
+      {/* PESTAÑA: RESUMEN CLAVE */}
+      {activeTab === 'resumen' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Tarjeta de Producción */}
+            <div className="p-6 rounded-3xl bg-white border border-emerald-100 shadow-sm space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                    Producción y Valor Agregado
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">
+                    {formatCurrencyMiles(latestPbgConstante)}
+                  </h3>
+                  <span className="text-xs text-slate-500 font-mono">
+                    Año 2024* (precios constantes de 2004)
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Esta actividad representa el <strong>{pbgSharePct}%</strong> de toda la producción generada en la Provincia de Jujuy. A precios corrientes nominales de 2024*, equivale a <strong>{formatCurrencyMiles(latestPbgCorriente)}</strong>.
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('pbg')}
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer pt-2 border-t border-emerald-50"
+              >
+                <span>Ver gráfico histórico y selector de precios</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Tarjeta de Empleo Formal */}
+            <div className="p-6 rounded-3xl bg-white border border-blue-100 shadow-sm space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-blue-800">
+                    Trabajadores Asalariados Registrados
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">
+                    {totalPuestosOede !== null ? `${formatNumber(totalPuestosOede)} puestos` : 'No disponible'}
+                  </h3>
+                  <span className="text-xs text-slate-500 font-mono">
+                    {isOedeAvailable ? latestOedePeriod : 'Sector público provincial'}
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                  <Users className="w-5 h-5" />
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {isOedeAvailable ? (
+                  <>
+                    Puestos de trabajo formales declarados por empresas privadas ante AFIP/SIPA. No incluye empleo público provincial ni trabajo por cuenta propia.
+                    {hasOedeSecret && ' *Algunas subramas están bajo secreto estadístico.'}
+                  </>
+                ) : (
+                  'La administración pública (rama L) no se releva en la serie OEDE Jujuy. Los empleados estatales se rigen por normativas públicas específicas.'
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('oede')}
+                className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer pt-2 border-t border-blue-50"
+              >
+                <span>Ver serie trimestral y desglose de ramas</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mini Dashboard de Relaciones MIP y EIL */}
+          <div className="p-6 rounded-3xl bg-slate-900 text-white space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                  Estructura y Encadenamiento Productivo
+                </span>
+                <h4 className="text-lg font-black text-white mt-0.5">
+                  ¿Cómo tracciona esta actividad a otros sectores?
+                </h4>
+              </div>
+              <div className="text-xs text-slate-400 font-mono">
+                Matriz Insumo-Producto · Base 2015
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                <span className="text-slate-400 block text-[11px]">Multiplicador Total</span>
+                <strong className="text-lg font-black text-white block mt-1 font-mono">
+                  {primaryMip?.multiplicador_total_coef !== null ? primaryMip?.multiplicador_total_coef?.toFixed(2) : '—'}
+                </strong>
+                <span className="text-[10px] text-slate-400">Total puestos directos e indirectos por unidad</span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                <span className="text-slate-400 block text-[11px]">Empleo Directo</span>
+                <strong className="text-lg font-black text-amber-300 block mt-1 font-mono">
+                  {primaryMip?.empleo_directo_por_millon !== null ? primaryMip?.empleo_directo_por_millon?.toFixed(2) : '—'}
+                </strong>
+                <span className="text-[10px] text-slate-400">Puestos generados en la propia rama</span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                <span className="text-slate-400 block text-[11px]">Empleo Indirecto</span>
+                <strong className="text-lg font-black text-amber-400 block mt-1 font-mono">
+                  {primaryMip?.empleo_indirecto_por_millon !== null ? primaryMip?.empleo_indirecto_por_millon?.toFixed(2) : '—'}
+                </strong>
+                <span className="text-[10px] text-slate-400">Puestos inducidos en proveedores</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 leading-snug">
+              * Nota: La MIP describe la matriz técnica del año base 2015. No debe interpretarse como empleo actual ni proyección automática.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* PESTAÑA: PBG (PRODUCCIÓN) */}
+      {activeTab === 'pbg' && (
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 animate-in fade-in duration-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wider font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                💰 Producto Bruto Geográfico · DiPEC
+              </span>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                Evolución de la Producción de {currentArea.nombre}
+              </h2>
+              <p className="text-xs text-slate-500 max-w-xl">
+                Valor agregado generado en Jujuy entre 2004 y 2024*.
+              </p>
+            </div>
+
+            {/* Controles de Gráfico PBG */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Selector de Precios */}
+              <div className="flex items-center p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setPbgMode('constante')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    pbgMode === 'constante' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Precios Constantes (2004)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPbgMode('corriente')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    pbgMode === 'corriente' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Precios Corrientes
+                </button>
+              </div>
+
+              {/* Selector de Rango */}
+              <div className="flex items-center p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setPbgRange('ultimos5')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    pbgRange === 'ultimos5' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Últimos 5 años
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPbgRange('historica')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    pbgRange === 'historica' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Serie Completa (2004-2024*)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Gráfico Interactivo de PBG */}
+          <InteractiveChart
+            data={pbgChartPoints}
+            title={`Tendencia de PBG a ${pbgMode === 'constante' ? 'Precios Constantes (2004)' : 'Precios Corrientes'}`}
+            subtitle={pbgMode === 'constante' ? 'Expresado en miles de pesos constantes de 2004 para medir volumen físico sin inflación.' : 'Expresado en miles de pesos corrientes nominales.'}
+            unit={pbgMode === 'constante' ? 'miles de $ 2004' : 'miles de $ corr.'}
+            valuePrefix="$"
+            color="emerald"
+            formatValue={(val) => formatCurrencyMiles(val)}
+          />
+
+          {/* Bloque de Interpretación Contextual */}
+          <MetricExplainer
+            whatItMeans="El Producto Bruto Geográfico (PBG) mide el valor monetario de todos los bienes y servicios finales producidos por esta rama dentro del territorio de Jujuy durante un año."
+            howItIsCalculated="A precios constantes de 2004, se valora la producción física a los precios fijos del año 2004 para descontar el efecto de la inflación y observar si la actividad produjo más o menos volumen. A precios corrientes, se multiplica por los precios vigentes en cada año calendario."
+            sourceDetails={{
+              organismo: 'Dirección Provincial de Estadística y Censos (DiPEC) - Gobierno de Jujuy',
+              indicadorOficial: 'Producto Bruto Geográfico a precios básicos',
+              archivoOriginal: 'SERIE DE PBG DE JUJUY 2004 - 2024 provisorio.xlsx',
+              cobertura: 'Provincia de Jujuy',
+              universo: 'Total de unidades productivas provinciales',
+              advertencia: 'Las cifras del año 2024 tienen carácter provisorio oficial sujeto a revisión habitual por parte de DiPEC.',
+            }}
+          />
         </section>
       )}
 
-      {/* ========================================================================= */}
-      {/* 4. MÓDULO MIP (DiPEC / CEP XXI) */}
-      {/* ========================================================================= */}
-      {(activeTab === 'todos' || activeTab === 'mip') && (
-        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-          <div className="border-b border-slate-100 pb-4 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs uppercase tracking-wider font-extrabold text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
-                🔗 ¿Cómo se relaciona esta actividad con otras?
+      {/* PESTAÑA: OEDE (EMPLEO PRIVADO FORMAL) */}
+      {activeTab === 'oede' && (
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 animate-in fade-in duration-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wider font-extrabold text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                👥 Asalariados Registrados Privados · OEDE / SIPA
               </span>
-              <span className="text-xs text-slate-500 font-semibold">
-                MIP · Matriz Insumo-Producto · DiPEC / CEP XXI
-              </span>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                Empleo Privado Registrado en {currentArea.nombre}
+              </h2>
+              <p className="text-xs text-slate-500 max-w-xl">
+                Puestos de trabajo formales declarados por empresas privadas en Jujuy.
+              </p>
             </div>
+
+            {isOedeAvailable && (
+              <div className="flex items-center p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setOedeRange('ultimos3')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    oedeRange === 'ultimos3' ? 'bg-white text-blue-800 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Últimos 3 años (12 trimestres)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOedeRange('completa')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    oedeRange === 'completa' ? 'bg-white text-blue-800 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Serie Completa (1996–2026)
+                </button>
+              </div>
+            )}
+          </div>
+
+          {!isOedeAvailable ? (
+            /* Estado específico y pedagógico para A10 (Administración Pública) */
+            <div className="p-8 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
+              <div className="flex items-center gap-2 text-amber-900 font-bold text-base">
+                <AlertCircle className="w-5 h-5 text-amber-700" />
+                <span>Serie no aplicable en la fuente oficial de empleo privado</span>
+              </div>
+              <p className="text-xs text-amber-900/90 leading-relaxed max-w-2xl">
+                La rama L (Administración Pública) <strong>no forma parte de la serie OEDE de empleo privado asalariado de Jujuy</strong>. Los trabajadores del sector público provincial y municipal se rigen por regímenes estatutarios específicos.
+              </p>
+              <p className="text-xs text-slate-600">
+                De acuerdo con el principio de integridad estadística, <strong>no se imputa valor cero ni se generan estimaciones sintéticas</strong>.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Gráfico Interactivo de Empleo OEDE */}
+              <InteractiveChart
+                data={oedeChartPoints}
+                title="Evolución Trimestral de Puestos de Trabajo Registrados"
+                subtitle="Serie continua relevada por el Sistema Integrado Previsional Argentino (SIPA)."
+                unit="puestos"
+                color="blue"
+              />
+
+              {hasOedeSecret && (
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>
+                    <strong>Secreto estadístico oficial:</strong> Algunas subramas específicas de esta área protegen la confidencialidad de datos cuando existen pocas empresas declarantes (Ley 17.622).
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
+          <MetricExplainer
+            whatItMeans="Los puestos de trabajo registrados corresponden a personas contratadas formalmente bajo relación de dependencia por empresas del sector privado en Jujuy. No incluye empleo público ni trabajo independiente/informal."
+            howItIsCalculated="Se contabilizan a partir de las declaraciones juradas mensuales que presentan los empleadores ante AFIP (formulario 931) procesadas por el Observatorio de Empleo (OEDE)."
+            sourceDetails={{
+              organismo: 'Observatorio de Empleo y Dinámica Empresarial (OEDE) / Secretaría de Trabajo',
+              indicadorOficial: 'Asalariados registrados del sector privado (puestos de trabajo)',
+              archivoOriginal: 'Series provinciales OEDE (1996T1 - 2026T1)',
+              cobertura: 'Provincia de Jujuy',
+              universo: 'Empresas privadas declarantes en SIPA',
+              advertencia: 'Un puesto de trabajo no equivale necesariamente a una persona, ya que una persona puede registrar más de un empleo formal simultáneamente.',
+            }}
+          />
+        </section>
+      )}
+
+      {/* PESTAÑA: EIL (DINÁMICA LABORAL GRAN JUJUY) */}
+      {activeTab === 'eil' && (
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 animate-in fade-in duration-100">
+          <div className="border-b border-slate-100 pb-4 space-y-1">
+            <span className="text-xs uppercase tracking-wider font-extrabold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+              🧩 Dinámica Laboral Gran Jujuy · MTEySS
+            </span>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              Multiplicadores de Empleo Directo e Indirecto (Año Base 2015)
+              Indicadores de Demanda y Empleo en Aglomerado Urbano
             </h2>
-            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-              La MIP permite observar cómo una actividad se vincula con otros sectores mediante empleo directo e indirecto. Base 2015 · coeficientes estructurales · no representa empleo actual.
+            <p className="text-xs text-slate-500 max-w-xl">
+              Relevamiento mensual en empresas privadas formales de 5 y más ocupados en Gran Jujuy.
             </p>
           </div>
 
-          <MethodWarning type="mip-base2015" />
-
-          {/* Grilla de Sectores MIP asociados a esta área */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <Building className="w-4 h-4 text-indigo-600" />
-              Sectores MIP correspondientes ({mipSectors.length})
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mipSectors.map((sec) => (
-                <div key={sec.sector_mip_id} className="p-5 rounded-2xl bg-indigo-50/40 border border-indigo-100 space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white text-indigo-900 border border-indigo-200">
-                        Sector MIP {sec.sector_mip_id}
-                      </span>
-                      <span className="text-[11px] font-semibold text-indigo-700">
-                        Base 2015
-                      </span>
-                    </div>
-                    <h4 className="font-bold text-slate-900 text-sm">
-                      {sec.nombre_sector}
-                    </h4>
+          {!isEilAvailable ? (
+            <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex items-center gap-2 text-slate-800 font-bold text-base">
+                <Info className="w-5 h-5 text-slate-600" />
+                <span>Sector excluido del relevamiento urbano de EIL</span>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed max-w-2xl">
+                {isEilPrimary && (
+                  <>
+                    La Encuesta de Indicadores Laborales (EIL) se focaliza en aglomerados urbanos y <strong>excluye formalmente las actividades del sector primario (agropecuario y extracción de minerales)</strong>.
+                  </>
+                )}
+                {isEilPublic && (
+                  <>
+                    La EIL investiga únicamente establecimientos del <strong>sector privado formal</strong> de 5 y más trabajadores, excluyendo a la administración pública provincial y municipal.
+                  </>
+                )}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {isEilAgrupada && (
+                <div className="p-3.5 bg-purple-50 rounded-2xl border border-purple-200 text-xs text-purple-900 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-purple-700" />
+                    <span>Agrupación indivisible oficial (A06 Comercio + A07 Turismo)</span>
                   </div>
+                  <p className="text-[11px] text-purple-800">
+                    En la EIL, la rama <em>«Comercio, restaurantes y hoteles»</em> constituye una categoría única que no se desagrega en las publicaciones oficiales del Ministerio de Trabajo.
+                  </p>
+                </div>
+              )}
 
-                  {/* Multiplicadores Directo / Indirecto / Total */}
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-indigo-100/80 text-center">
-                    <div className="p-2 rounded-xl bg-white border border-indigo-100">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                        Directo
-                      </span>
-                      <span className="text-base font-extrabold text-indigo-950 font-mono">
-                        {sec.empleo_directo_por_millon !== null ? formatNumber(sec.empleo_directo_por_millon, 3) : '-'}
-                      </span>
-                      <span className="text-[9px] text-slate-500 block">puestos/M$</span>
-                    </div>
-
-                    <div className="p-2 rounded-xl bg-white border border-indigo-100">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                        Indirecto
-                      </span>
-                      <span className="text-base font-extrabold text-indigo-700 font-mono">
-                        {sec.empleo_indirecto_por_millon !== null ? formatNumber(sec.empleo_indirecto_por_millon, 3) : '-'}
-                      </span>
-                      <span className="text-[9px] text-slate-500 block">en proveedores</span>
-                    </div>
-
-                    <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
-                      <span className="text-[10px] uppercase font-bold text-indigo-200 block">
-                        Total
-                      </span>
-                      <span className="text-base font-extrabold font-mono">
-                        {sec.multiplicador_total_por_millon !== null ? formatNumber(sec.multiplicador_total_por_millon, 3) : '-'}
-                      </span>
-                      <span className="text-[9px] text-indigo-200 block">impacto</span>
-                    </div>
+              {/* Tarjetas de Indicadores EIL */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-5 rounded-2xl bg-white border border-purple-100 shadow-xs space-y-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800">
+                    Índice de Empleo por Rama
+                  </span>
+                  <div className="text-2xl font-black text-slate-900 font-mono">
+                    {latestEilIndex?.valor ? latestEilIndex.valor.toFixed(1) : '100.0'}
                   </div>
+                  <span className="text-[11px] text-slate-500 block">
+                    Base Feb. 2015 = 100 · Período {latestEilPeriod}
+                  </span>
+                </div>
 
-                  <div className="text-[11px] text-slate-500 space-y-1 pt-1">
-                    <div className="flex justify-between">
-                      <span>VBP Nacional 2015:</span>
-                      <span className="font-medium text-slate-700">{formatNumber(sec.vbp_millones_pesos_2015, 0)} M$</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Densidad laboral directa:</span>
-                      <span className="font-mono text-slate-700">{sec.densidad_laboral_directa}</span>
-                    </div>
+                <div className="p-5 rounded-2xl bg-white border border-purple-100 shadow-xs space-y-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800">
+                    Variación Anual
+                  </span>
+                  <div className="text-2xl font-black text-slate-900 font-mono">
+                    {latestEilVarAnual?.valor !== null && latestEilVarAnual?.valor !== undefined
+                      ? `${latestEilVarAnual.valor > 0 ? '+' : ''}${latestEilVarAnual.valor.toFixed(1)}%`
+                      : '—'}
+                  </div>
+                  <span className="text-[11px] text-slate-500 block">
+                    Comparación interanual en empresas de 5+ ocupados
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <MetricExplainer
+            whatItMeans="La EIL mide la dinámica del empleo (incorporaciones, desvinculaciones y búsquedas) en empresas privadas de 5 o más personas del aglomerado Gran Jujuy."
+            howItIsCalculated="Se calcula a través de índices basados en febrero de 2015 = 100 y variaciones porcentuales trimestrales e interanuales."
+            sourceDetails={{
+              organismo: 'Ministerio de Trabajo, Empleo y Seguridad Social (MTEySS)',
+              indicadorOficial: 'Encuesta de Indicadores Laborales (EIL) - Cuadro 3.9.2',
+              archivoOriginal: 'EIL_2407_2.xlsx',
+              cobertura: 'Gran Jujuy (Aglomerado urbano)',
+              universo: 'Empresas privadas de 5 y más ocupados',
+              advertencia: 'La calificación de la tarea solicitada en las búsquedas describe los requerimientos del puesto y no el nivel de estudios alcanzado por la persona.',
+            }}
+          />
+        </section>
+      )}
+
+      {/* PESTAÑA: MIP (INSUMO-PRODUCTO) */}
+      {activeTab === 'mip' && (
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 animate-in fade-in duration-100">
+          <div className="border-b border-slate-100 pb-4 space-y-1">
+            <span className="text-xs uppercase tracking-wider font-extrabold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+              🔗 Matriz Insumo-Producto · Base 2015
+            </span>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+              Eslabones Productivos y Multiplicadores de Empleo
+            </h2>
+            <p className="text-xs text-slate-500 max-w-xl">
+              Relaciones entre sectores económicos y compras a proveedores en Jujuy.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+            <div className="font-bold flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-amber-700" />
+              <span>Advertencia metodológica sobre año base 2015</span>
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              Los multiplicadores de la MIP describen la estructura técnica y capacidad de tracción del <strong>año base 2015</strong>. No deben interpretarse como cantidad actual de puestos de trabajo ni rankings de carreras profesionales.
+            </p>
+          </div>
+
+          {/* Gráfico Visual de Empleo Directo vs Indirecto */}
+          {primaryMip && (
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <h4 className="text-sm font-bold text-slate-900">
+                Estructura de Empleo Directo e Indirecto por Millón de Pesos de 2015
+              </h4>
+
+              <div className="space-y-3">
+                {/* Barra Directo */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700">Empleo Directo en la rama</span>
+                    <span className="font-mono font-bold text-slate-900">
+                      {primaryMip.empleo_directo_por_millon?.toFixed(2) || '—'} puestos / millón
+                    </span>
+                  </div>
+                  <div className="h-4 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, ((primaryMip.empleo_directo_por_millon || 0) / (primaryMip.multiplicador_total_coef || 1)) * 100)}%`,
+                      }}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
 
-            <p className="text-[11px] text-slate-400">
-              Unidad: Puestos de trabajo generados o sostenidos por cada $1.000.000 de Valor Bruto de Producción a precios de 2015. Fuente: DiPEC en base a CEP XXI.
+                {/* Barra Indirecto */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700">Empleo Indirecto inducido en proveedores</span>
+                    <span className="font-mono font-bold text-slate-900">
+                      {primaryMip.empleo_indirecto_por_millon?.toFixed(2) || '—'} puestos / millón
+                    </span>
+                  </div>
+                  <div className="h-4 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-600 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, ((primaryMip.empleo_indirecto_por_millon || 0) / (primaryMip.multiplicador_total_coef || 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <MetricExplainer
+            whatItMeans="El multiplicador de empleo mide cuántos puestos de trabajo adicionales se generan indirectamente en la economía provincial por cada puesto de trabajo creado directamente en esta actividad, debido a las compras de insumos a otras empresas."
+            howItIsCalculated="A través de la matriz inversa de Leontief sobre el modelo de insumo-producto provincial calibrado con el Cociente de Localización Simple (SLQ)."
+            sourceDetails={{
+              organismo: 'DiPEC Jujuy en base a metodología CEP XXI',
+              indicadorOficial: 'Multiplicadores de empleo directo e indirecto (Cuadro 3)',
+              archivoOriginal: 'Estimaciones de empleo directo e indirecto a través de la MIP Jujuy base 2015.pdf',
+              cobertura: 'Provincia de Jujuy',
+              universo: '34 sectores productivos de la matriz provincial',
+              advertencia: 'Bajo ninguna circunstancia estos coeficientes implican causalidad mecánica inmediata en el presente.',
+            }}
+          />
+        </section>
+      )}
+
+      {/* PESTAÑA: TRAZABILIDAD Y NOMENCLADORES */}
+      {activeTab === 'trazabilidad' && (
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 animate-in fade-in duration-100">
+          <div className="border-b border-slate-100 pb-4 space-y-1">
+            <span className="text-xs uppercase tracking-wider font-extrabold text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-300">
+              📋 Rigor Técnico y Auditoría
+            </span>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+              Trazabilidad Oficial de Nomencladores
+            </h2>
+            <p className="text-xs text-slate-500 max-w-xl">
+              Correspondencias auditables entre el código conceptual {currentArea.area_id} y las clasificaciones públicas oficiales.
+            </p>
+          </div>
+
+          {/* Tabla de Correspondencias */}
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
+                <tr>
+                  <th className="p-3">Fuente</th>
+                  <th className="p-3">Código</th>
+                  <th className="p-3">Denominación Oficial en la Fuente</th>
+                  <th className="p-3">Tipo</th>
+                  <th className="p-3">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {areaCorrs.map((corr) => (
+                  <tr key={corr.correspondencia_id} className="hover:bg-slate-50">
+                    <td className="p-3 font-bold text-slate-900">{corr.fuente}</td>
+                    <td className="p-3 font-mono text-[11px]">{corr.codigo_fuente}</td>
+                    <td className="p-3 font-medium">{corr.nombre_fuente}</td>
+                    <td className="p-3">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 font-mono text-[10px]">
+                        {corr.tipo_correspondencia}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        corr.estado === 'CONFIRMADO'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
+                      }`}>
+                        {corr.estado}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+            <span className="font-bold text-slate-800 block">Cadena de auditoría:</span>
+            <p className="text-[11px] leading-relaxed">
+              Cada dato exhibido en esta ficha cuenta con un registro identificable en los archivos fuente originales publicados por DiPEC, OEDE / SIPA y MTEySS. No existen imputaciones ni estimaciones sintéticas no documentadas.
             </p>
           </div>
         </section>
       )}
-
-      {/* ========================================================================= */}
-      {/* 5. MATRIZ DE TRAZABILIDAD DEL ÁREA */}
-      {/* ========================================================================= */}
-      <section className="bg-slate-100/90 rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-4">
-        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <HelpCircle className="w-5 h-5 text-slate-600" />
-          Trazabilidad y Correspondencias Metodológicas de {currentArea.area_id}
-        </h3>
-        <p className="text-xs text-slate-600">
-          Rastro auditable de las ramas y códigos originales en cada fuente asignados a esta área conceptual:
-        </p>
-
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-              <tr>
-                <th className="py-2.5 px-3">Fuente</th>
-                <th className="py-2.5 px-3">Código Fuente</th>
-                <th className="py-2.5 px-3">Nombre en la Fuente</th>
-                <th className="py-2.5 px-3">Tipo Correspondencia</th>
-                <th className="py-2.5 px-3">Estado</th>
-                <th className="py-2.5 px-3">Observación Metodológica</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {areaCorrespondencias.map((c) => (
-                <tr key={c.correspondencia_id} className="hover:bg-slate-50">
-                  <td className="py-2 px-3 font-semibold text-slate-800">{c.fuente}</td>
-                  <td className="py-2 px-3 font-mono font-bold text-slate-700">{c.codigo_fuente}</td>
-                  <td className="py-2 px-3 text-slate-800 max-w-[220px]">{c.nombre_fuente}</td>
-                  <td className="py-2 px-3">
-                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-slate-100 text-slate-700">
-                      {c.tipo_correspondencia}
-                    </span>
-                  </td>
-                  <td className="py-2 px-3">
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                      c.estado === 'CONFIRMADO' ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'
-                    }`}>
-                      {c.estado}
-                    </span>
-                  </td>
-                  <td className="py-2 px-3 text-slate-500 text-[11px] leading-relaxed">{c.observacion}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Navegación secuencial inferior */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs">
-        <button
-          onClick={() => {
-            onNavigateArea(prevArea.area_id);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          className="w-full sm:w-auto flex items-center gap-3 text-left p-2.5 rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-brand-50/50 transition-all group"
-          aria-label={`Ir al área anterior ${prevArea.area_id}`}
-        >
-          <ChevronLeft className="w-5 h-5 text-slate-400 group-hover:text-brand-700 flex-shrink-0" />
-          <div>
-            <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Área Anterior</span>
-            <span className="text-xs font-bold text-slate-800 group-hover:text-brand-700">{prevArea.area_id} — {prevArea.nombre}</span>
-          </div>
-        </button>
-
-        <button
-          onClick={onBack}
-          className="text-xs font-semibold text-slate-600 hover:text-brand-700 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
-        >
-          Volver al Explorador de Áreas
-        </button>
-
-        <button
-          onClick={() => {
-            onNavigateArea(nextArea.area_id);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3 text-right p-2.5 rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-brand-50/50 transition-all group"
-          aria-label={`Ir a la siguiente área ${nextArea.area_id}`}
-        >
-          <div>
-            <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Siguiente Área</span>
-            <span className="text-xs font-bold text-slate-800 group-hover:text-brand-700">{nextArea.area_id} — {nextArea.nombre}</span>
-          </div>
-          <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand-700 flex-shrink-0" />
-        </button>
-      </div>
     </div>
   );
 };
