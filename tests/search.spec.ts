@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Search functionality', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
     await page.getByRole('button', { name: '12 Áreas de Jujuy' }).click();
   });
 
@@ -38,7 +38,7 @@ test.describe('Search functionality', () => {
 
     // Should show Area A09 with match explanation
     await expect(page.locator('text=Finanzas y servicios').first()).toBeVisible();
-    await expect(page.locator('text=Coincide con término buscado: "abogado"')).toBeVisible();
+    await expect(page.locator('text=Término orientativo relacionado: "abogado"')).toBeVisible();
   });
 
   test('search unmatched state and clear button', async ({ page }) => {

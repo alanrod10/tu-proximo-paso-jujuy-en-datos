@@ -56,7 +56,9 @@ export const AreasExplorerPage: React.FC<AreasExplorerPageProps> = ({ areas, onS
     );
 
     if (matchedCorr) {
-      acc.push({ ...area, matchReason: `Coincide con clasificación oficial: "${matchedCorr.nombre_fuente}"` });
+      const isConfirmed = matchedCorr.estado === 'CONFIRMADO';
+      const reasonPrefix = isConfirmed ? 'Coincide con clasificación oficial' : 'Coincidencia parcial/observada';
+      acc.push({ ...area, matchReason: `${reasonPrefix}: "${matchedCorr.nombre_fuente}"` });
       return acc;
     }
 
@@ -67,7 +69,7 @@ export const AreasExplorerPage: React.FC<AreasExplorerPageProps> = ({ areas, onS
         normalizeString(al).includes(normalizedSearch)
       );
       if (matchedAlias) {
-         acc.push({ ...area, matchReason: `Coincide con término buscado: "${matchedAlias}"` });
+         acc.push({ ...area, matchReason: `Término orientativo relacionado: "${matchedAlias}"` });
          return acc;
       }
     }

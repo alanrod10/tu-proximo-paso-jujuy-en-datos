@@ -5,23 +5,23 @@
   },
   {
     "area_id": "A05",
-    "alias": ["albañil", "arquitecto", "obra", "ingeniero civil", "ingenieria civil", "constructor"]
+    "alias": ["albañil", "arquitecto", "obra", "ingeniero civil", "constructor"]
   },
   {
     "area_id": "A06",
-    "alias": ["vendedor", "supermercado", "kiosco", "negocio", "ferreteria", "tienda", "venta", "comerciante"]
+    "alias": ["vendedor", "supermercado", "kiosco", "negocio", "ferreteria", "tienda", "comerciante"]
   },
   {
     "area_id": "A07",
-    "alias": ["hotel", "restaurante", "mozo", "chef", "cocinero", "viaje", "guia turistico"]
+    "alias": ["hotel", "restaurante", "mozo", "chef", "cocinero", "guia turistico"]
   },
   {
     "area_id": "A08",
-    "alias": ["colectivo", "camionero", "chofer", "remis", "logistica", "internet", "programador", "software", "sistemas", "telecomunicaciones"]
+    "alias": ["colectivo", "camionero", "chofer", "remis", "logistica", "telecomunicaciones"]
   },
   {
     "area_id": "A09",
-    "alias": ["abogado", "contador", "banco", "cajero", "seguros", "inmobiliaria", "administracion de empresas"]
+    "alias": ["abogado", "contador", "banco", "cajero", "seguros", "inmobiliaria"]
   },
   {
     "area_id": "A10",
