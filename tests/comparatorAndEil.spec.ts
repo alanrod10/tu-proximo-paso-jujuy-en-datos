@@ -197,6 +197,33 @@ test.describe('Fase 4: Modo Comparador y Dinámica Laboral Transversal (EIL)', (
     await expect(page.getByText(/aporta 8.51 puntos porcentuales más/i)).toBeVisible();
   });
 
+  test('Comparator: displays real OEDE period from adapter (1° Trim 2026) instead of fixed 2024, and marks temporal discrepancies', async ({ page }) => {
+    await page.goto('/#comparador');
+    await page.waitForLoadState('networkidle');
+
+    const oedeSection = page.locator('section[aria-labelledby="heading-oede-comp"]');
+    await expect(oedeSection).toBeVisible();
+
+    // 1. El encabezado debe mostrar dinámicamente el período real '1° Trim 2026' y NO una constante '2024'
+    await expect(oedeSection.getByText(/Período 1° Trim 2026/i)).toBeVisible();
+    await expect(oedeSection.getByText(/Período 2024/i)).not.toBeVisible();
+
+    // 2. Las tarjetas de A01 y A03 deben mostrar el badge '1° Trim 2026'
+    const badges2026 = oedeSection.locator('span:has-text("1° Trim 2026")');
+    await expect(badges2026).toHaveCount(3); // 1 en encabezado + 2 en tarjetas
+
+    // 3. Explicación de comparabilidad temporal válida
+    await expect(oedeSection.getByText(/Ambos indicadores corresponden al mismo período \(1° Trim 2026\)/i)).toBeVisible();
+
+    // 4. Cambiar Área 2 a A10 (Administración Pública, sin serie OEDE):
+    // La tarjeta de A10 no debe mostrar una fecha inventada ni '2024', sino 'No aplica'
+    const sel2 = page.locator('select[aria-label="Seleccionar Área 2 para comparar"]');
+    await sel2.selectOption('A10');
+
+    await expect(oedeSection.getByText('No aplica')).toBeVisible();
+    await expect(oedeSection.locator('span:has-text("2024")')).toHaveCount(0);
+  });
+
   test('Captures responsive visual snapshots of Fase 4 comparator and EIL transversal', async ({ page }, testInfo) => {
     const saveSnapshot = async (filename: string) => {
       const targetPath = process.env.SCREENSHOT_DIR

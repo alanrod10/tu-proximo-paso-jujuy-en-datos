@@ -249,47 +249,320 @@ test.describe('Statistical Integrity Validation (dataAdapter)', () => {
     expect(result.a01?.oede.puestosTrabajo).toBeNull();
   });
 
-  test('OEDE Regression: Statistical secrecy handling prevents calculating full provincial total without warning', async ({ page }) => {
+  test('OEDE Integrity 1: Missing expected categories (only A, C, D provided) prevents alternative sum and returns null', async ({ page }) => {
     const result = await page.evaluate(() => {
       const adapter = (window as any).__DATA_ADAPTER__;
-      // Inyectar dataset OEDE sin nivel TOTAL, con registros de ramas donde una tiene secreto
+      // Inyectar dataset OEDE sin nivel TOTAL y solo con 3 ramas de las 14 esperadas
       adapter.setAdapterOverrides({
         oede: {
           metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
           series: [
             {
-              periodo: '1° Trim 2026',
-              tipo_nivel: 'LETRA',
-              codigo_actividad: 'A',
-              nombre_actividad: 'Agricultura',
+              id: 'OEDE_A',
               area_id: 'A01',
+              codigo_rama: 'A',
+              nombre_rama: 'Agricultura',
+              tipo_nivel: 'LETRA',
+              letra_padre: null,
+              periodo: '1° Trim 2026',
+              anio: 2026,
+              trimestre: 1,
               puestos_trabajo: 9000,
-              estado_dato: 'PUBLICADO'
+              estado_dato: 'PUBLICADO',
+              unidad: 'Puestos'
             },
             {
-              periodo: '1° Trim 2026',
+              id: 'OEDE_C',
+              area_id: 'A02',
+              codigo_rama: 'C',
+              nombre_rama: 'Minería',
               tipo_nivel: 'LETRA',
-              codigo_actividad: 'B',
-              nombre_actividad: 'Pesca',
-              area_id: 'A01',
-              puestos_trabajo: null,
-              estado_dato: 'SIN_DATO_SECRETO_ESTADISTICO'
+              letra_padre: null,
+              periodo: '1° Trim 2026',
+              anio: 2026,
+              trimestre: 1,
+              puestos_trabajo: 3000,
+              estado_dato: 'PUBLICADO',
+              unidad: 'Puestos'
+            },
+            {
+              id: 'OEDE_D',
+              area_id: 'A03',
+              codigo_rama: 'D',
+              nombre_rama: 'Industria',
+              tipo_nivel: 'LETRA',
+              letra_padre: null,
+              periodo: '1° Trim 2026',
+              anio: 2026,
+              trimestre: 1,
+              puestos_trabajo: 10000,
+              estado_dato: 'PUBLICADO',
+              unidad: 'Puestos'
             }
           ]
         }
       });
-      const provincial = adapter.getProvincialOverview();
-      const a01 = adapter.getAreaOverview('A01');
-      return { provincial, a01 };
+      return adapter.getProvincialOverview();
     });
 
-    // El total no se puede computar sumando letras si hay secreto estadístico
-    expect(result.provincial.oedeTotalPuestosRegistrados).toBeNull();
-    expect(result.provincial.oedeDisponible).toBe(false);
-    expect(result.provincial.oedeMotivoNoDisponible).toContain('secreto estadístico');
+    expect(result.oedeTotalPuestosRegistrados).toBeNull();
+    expect(result.oedeDisponible).toBe(false);
+    expect(result.oedeMotivoNoDisponible).toContain('Cobertura incompleta del universo sectorial OEDE');
+    expect(result.oedeMotivoNoDisponible).toContain('faltan ramas oficiales esperadas');
+  });
 
-    // El área A01 que agrupa ramas con secreto debe marcar tieneSecretoEstadistico: true y esCompleto: false
-    expect(result.a01?.oede.tieneSecretoEstadistico).toBe(true);
-    expect(result.a01?.oede.esCompleto).toBe(false);
+  test('OEDE Integrity 2: Records with null values and states other than PUBLICADO (SIN_DATO, FORMATO_ESPECIAL) prevent sum', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'];
+      const series = letters.map(code => ({
+        id: `OEDE_${code}`,
+        area_id: 'A01',
+        codigo_rama: code,
+        nombre_rama: `Rama ${code}`,
+        tipo_nivel: 'LETRA',
+        letra_padre: null,
+        periodo: '1° Trim 2026',
+        anio: 2026,
+        trimestre: 1,
+        // Letra E tiene estado no publicado y valor nulo
+        puestos_trabajo: code === 'E' ? null : 1000,
+        estado_dato: code === 'E' ? 'SIN_DATO' : 'PUBLICADO',
+        unidad: 'Puestos'
+      }));
+
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series
+        }
+      });
+      return adapter.getProvincialOverview();
+    });
+
+    expect(result.oedeTotalPuestosRegistrados).toBeNull();
+    expect(result.oedeDisponible).toBe(false);
+    expect(result.oedeMotivoNoDisponible).toContain('valores no publicados, no numéricos o nulos');
+  });
+
+  test('OEDE Integrity 3: Duplicate records at letter level prevent alternative sum and return null', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'];
+      const series = letters.map(code => ({
+        id: `OEDE_${code}`,
+        area_id: 'A01',
+        codigo_rama: code,
+        nombre_rama: `Rama ${code}`,
+        tipo_nivel: 'LETRA',
+        letra_padre: null,
+        periodo: '1° Trim 2026',
+        anio: 2026,
+        trimestre: 1,
+        puestos_trabajo: 1000,
+        estado_dato: 'PUBLICADO',
+        unidad: 'Puestos'
+      }));
+      // Agregar un duplicado de la letra A
+      series.push({
+        id: 'OEDE_A_DUPLICADO',
+        area_id: 'A01',
+        codigo_rama: 'A',
+        nombre_rama: 'Rama A Duplicada',
+        tipo_nivel: 'LETRA',
+        letra_padre: null,
+        periodo: '1° Trim 2026',
+        anio: 2026,
+        trimestre: 1,
+        puestos_trabajo: 1000,
+        estado_dato: 'PUBLICADO',
+        unidad: 'Puestos'
+      });
+
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series
+        }
+      });
+      return adapter.getProvincialOverview();
+    });
+
+    expect(result.oedeTotalPuestosRegistrados).toBeNull();
+    expect(result.oedeDisponible).toBe(false);
+    expect(result.oedeMotivoNoDisponible).toContain('registros duplicados');
+  });
+
+  test('OEDE Integrity 4: Complete and valid set containing all 14 official categories enables summing correctly', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'];
+      const series = letters.map((code, index) => ({
+        id: `OEDE_${code}`,
+        area_id: 'A01',
+        codigo_rama: code,
+        nombre_rama: `Rama ${code}`,
+        tipo_nivel: 'LETRA',
+        letra_padre: null,
+        periodo: '1° Trim 2026',
+        anio: 2026,
+        trimestre: 1,
+        puestos_trabajo: (index + 1) * 1000,
+        estado_dato: 'PUBLICADO',
+        unidad: 'Puestos'
+      }));
+
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series
+        }
+      });
+      return adapter.getProvincialOverview();
+    });
+
+    // Suma de 1 a 14 * 1000 = (14 * 15 / 2) * 1000 = 105,000
+    expect(result.oedeTotalPuestosRegistrados).toBe(105000);
+    expect(result.oedeDisponible).toBe(true);
+    expect(result.oedeMotivoNoDisponible).toBeUndefined();
+  });
+
+  test('OEDE Integrity 5: Statistical secrecy in any letter prevents sum and gives clear reason', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'];
+      const series = letters.map(code => ({
+        id: `OEDE_${code}`,
+        area_id: 'A01',
+        codigo_rama: code,
+        nombre_rama: `Rama ${code}`,
+        tipo_nivel: 'LETRA',
+        letra_padre: null,
+        periodo: '1° Trim 2026',
+        anio: 2026,
+        trimestre: 1,
+        puestos_trabajo: code === 'B' ? null : 1000,
+        estado_dato: code === 'B' ? 'SIN_DATO_SECRETO_ESTADISTICO' : 'PUBLICADO',
+        unidad: 'Puestos'
+      }));
+
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series
+        }
+      });
+      return adapter.getProvincialOverview();
+    });
+
+    expect(result.oedeTotalPuestosRegistrados).toBeNull();
+    expect(result.oedeDisponible).toBe(false);
+    expect(result.oedeMotivoNoDisponible).toContain('secreto estadístico');
+  });
+
+  test('OEDE Integrity 6: Empty series or non-numeric/non-finite values (NaN, Infinity) return null without crashing', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'];
+      const series = letters.map(code => ({
+        id: `OEDE_${code}`,
+        area_id: 'A01',
+        codigo_rama: code,
+        nombre_rama: `Rama ${code}`,
+        tipo_nivel: 'LETRA',
+        letra_padre: null,
+        periodo: '1° Trim 2026',
+        anio: 2026,
+        trimestre: 1,
+        puestos_trabajo: code === 'C' ? NaN : 1000,
+        estado_dato: 'PUBLICADO',
+        unidad: 'Puestos'
+      }));
+
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series
+        }
+      });
+      return adapter.getProvincialOverview();
+    });
+
+    expect(result.oedeTotalPuestosRegistrados).toBeNull();
+    expect(result.oedeDisponible).toBe(false);
+  });
+
+  test('OEDE Integrity 7: Official published total record (63,017 in 1° Trim 2026) is read directly from official source', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      return adapter.getProvincialOverview();
+    });
+
+    expect(result.oedeTotalPuestosRegistrados).toBe(63017);
+    expect(result.oedeUltimoPeriodo).toBe('1° Trim 2026');
+    expect(result.oedeDisponible).toBe(true);
+  });
+
+  test('OEDE Area Integrity: Subtotal of published branches when other branches are secret is unequivocally marked as partial', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      // Inyectar un área A09 con 2 ramas: una publicada (500) y otra con secreto estadístico
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series: [
+            {
+              id: 'OEDE_TOTAL',
+              area_id: null,
+              codigo_rama: 'TOTAL',
+              nombre_rama: 'TOTAL',
+              tipo_nivel: 'TOTAL',
+              letra_padre: null,
+              periodo: '1° Trim 2026',
+              anio: 2026,
+              trimestre: 1,
+              puestos_trabajo: 500,
+              estado_dato: 'PUBLICADO',
+              unidad: 'Puestos'
+            },
+            {
+              id: 'OEDE_J',
+              area_id: 'A09',
+              codigo_rama: 'J',
+              nombre_rama: 'Finanzas',
+              tipo_nivel: 'LETRA',
+              letra_padre: null,
+              periodo: '1° Trim 2026',
+              anio: 2026,
+              trimestre: 1,
+              puestos_trabajo: 500,
+              estado_dato: 'PUBLICADO',
+              unidad: 'Puestos'
+            },
+            {
+              id: 'OEDE_K',
+              area_id: 'A09',
+              codigo_rama: 'K',
+              nombre_rama: 'Servicios inmobiliarios',
+              tipo_nivel: 'LETRA',
+              letra_padre: null,
+              periodo: '1° Trim 2026',
+              anio: 2026,
+              trimestre: 1,
+              puestos_trabajo: null,
+              estado_dato: 'SIN_DATO_SECRETO_ESTADISTICO',
+              unidad: 'Puestos'
+            }
+          ]
+        }
+      });
+      return adapter.getAreaOverview('A09');
+    });
+
+    expect(result?.oede.puestosTrabajo).toBe(500);
+    expect(result?.oede.tieneSecretoEstadistico).toBe(true);
+    expect(result?.oede.esCompleto).toBe(false);
+    expect(result?.oede.motivoNoDisponible).toContain('Dato parcial');
+    expect(result?.oede.motivoNoDisponible).toContain('No equivale al total del área');
   });
 });

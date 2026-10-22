@@ -13,6 +13,38 @@ import defaultOede from '../../data/empleo_oede.json';
 import defaultEil from '../../data/eil.json';
 import defaultMip from '../../data/mip_empleo.json';
 
+/**
+ * Catálogo canónico oficial de ramas a nivel de LETRA en OEDE Jujuy (SIPA).
+ * Fuente: Secretaría de Trabajo, Empleo y Seguridad Social (STySS) - OEDE.
+ * Corresponde a las 14 letras del clasificador de actividad económica presentes en la serie provincial:
+ * A: Agricultura, ganadería, caza y silvicultura
+ * B: Pesca y servicios conexos
+ * C: Explotación de minas y canteras
+ * D: Industria manufacturera
+ * E: Electricidad, gas y agua
+ * F: Construcción
+ * G: Comercio al por mayor y menor
+ * H: Hotelería y restaurantes
+ * I: Transporte, almacenamiento y comunicaciones
+ * J: Intermediación financiera
+ * K: Servicios inmobiliarios, empresariales y de alquiler
+ * M: Enseñanza
+ * N: Servicios sociales y de salud
+ * O: Servicios comunitarios, sociales y personales n.c.p.
+ *
+ * Reglas de integridad estadística:
+ * 1. La rama L (Administración pública, defensa y seguridad social obligatoria) NO forma parte del empleo
+ *    privado relevado en SIPA provincial.
+ * 2. Las ramas P (Hogares privados con servicio doméstico) y Q (Organizaciones extraterritoriales) no registran
+ *    empresas privadas declaradas en la serie de Jujuy.
+ * 3. Para que una suma agregada alternativa a nivel de letras sea demostrablemente completa, deben estar
+ *    presentes exactamente las 14 letras esperadas, sin duplicados, sin categorías omitidas y cada una con
+ *    un valor numérico finito y estado_dato 'PUBLICADO'.
+ */
+export const EXPECTED_OEDE_LETTERS: readonly string[] = [
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'
+] as const;
+
 export interface AreaOverview {
   areaId: AreaId;
   nombre: string;
@@ -147,31 +179,74 @@ function computeData() {
   let oedeDisponible = false;
   let oedeMotivoNoDisponible: string | undefined;
 
-  if (officialOedeTotalRecord && officialOedeTotalRecord.puestos_trabajo !== null && officialOedeTotalRecord.estado_dato === 'PUBLICADO') {
+  // 1. Si existe un registro oficial TOTAL, utilizarlo ÚNICAMENTE si su valor es numérico, finito, no nulo y su estado es PUBLICADO
+  const isOfficialTotalValid = (
+    officialOedeTotalRecord !== null &&
+    officialOedeTotalRecord !== undefined &&
+    typeof officialOedeTotalRecord.puestos_trabajo === 'number' &&
+    Number.isFinite(officialOedeTotalRecord.puestos_trabajo) &&
+    officialOedeTotalRecord.puestos_trabajo !== null &&
+    officialOedeTotalRecord.estado_dato === 'PUBLICADO'
+  );
+
+  if (isOfficialTotalValid) {
     totalOedePuestos = officialOedeTotalRecord.puestos_trabajo;
     oedeDisponible = true;
   } else if (officialOedeTotalRecord && officialOedeTotalRecord.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO') {
     totalOedePuestos = null;
     oedeDisponible = false;
-    oedeMotivoNoDisponible = 'El total provincial se encuentra bajo secreto estadístico oficial.';
+    oedeMotivoNoDisponible = 'El total provincial se encuentra bajo secreto estadístico oficial (Ley 17.622).';
   } else {
-    // Si no existe un registro directo de nivel TOTAL, verificar si las letras permiten computar una suma completa
+    // 2. Si no existe un registro oficial TOTAL válido y publicado, verificar si la suma alternativa de letras es demostrablemente completa
     const latestLetterRecords = latestOedePeriod
       ? oede.series.filter(r => r.tipo_nivel === 'LETRA' && r.periodo === latestOedePeriod)
       : [];
 
-    const hasSecret = latestLetterRecords.some(r => r.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO');
-    const hasMissing = latestLetterRecords.some(r => r.puestos_trabajo === null && r.estado_dato !== 'SIN_DATO_SECRETO_ESTADISTICO');
-
-    if (latestLetterRecords.length > 0 && !hasSecret && !hasMissing) {
-      totalOedePuestos = latestLetterRecords.reduce((acc, r) => acc + (r.puestos_trabajo ?? 0), 0);
-      oedeDisponible = true;
-    } else {
+    if (latestLetterRecords.length === 0) {
       totalOedePuestos = null;
       oedeDisponible = false;
-      oedeMotivoNoDisponible = hasSecret
-        ? 'No es posible determinar el total provincial porque contiene ramas protegidas por secreto estadístico (Ley 17.622).'
-        : 'Datos oficiales insuficientes para computar el total de empleo registrado provincial.';
+      oedeMotivoNoDisponible = 'No se registran datos oficiales de empleo formal para el período.';
+    } else {
+      // Regla A: Verificar registros duplicados
+      const letterCodes = latestLetterRecords.map(r => r.codigo_rama);
+      const uniqueCodes = new Set(letterCodes);
+      const hasDuplicates = letterCodes.length !== uniqueCodes.size;
+
+      // Regla B: Demostrar presencia de todas las categorías esperadas del nomenclador provincial
+      const missingExpected = EXPECTED_OEDE_LETTERS.filter(code => !uniqueCodes.has(code));
+
+      // Regla C: Cada registro debe tener valor numérico finito y estado_dato 'PUBLICADO'
+      const hasSecret = latestLetterRecords.some(r => r.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO');
+      const hasInvalidStateOrValue = latestLetterRecords.some(r => {
+        return (
+          r.estado_dato !== 'PUBLICADO' ||
+          r.puestos_trabajo === null ||
+          typeof r.puestos_trabajo !== 'number' ||
+          !Number.isFinite(r.puestos_trabajo)
+        );
+      });
+
+      if (hasDuplicates) {
+        totalOedePuestos = null;
+        oedeDisponible = false;
+        oedeMotivoNoDisponible = 'Inconsistencia en el dataset OEDE: existen registros duplicados a nivel de letra.';
+      } else if (missingExpected.length > 0) {
+        totalOedePuestos = null;
+        oedeDisponible = false;
+        oedeMotivoNoDisponible = `Cobertura incompleta del universo sectorial OEDE: faltan ramas oficiales esperadas (${missingExpected.join(', ')}).`;
+      } else if (hasSecret) {
+        totalOedePuestos = null;
+        oedeDisponible = false;
+        oedeMotivoNoDisponible = 'No es posible determinar el total provincial porque contiene ramas protegidas por secreto estadístico (Ley 17.622).';
+      } else if (hasInvalidStateOrValue) {
+        totalOedePuestos = null;
+        oedeDisponible = false;
+        oedeMotivoNoDisponible = 'No es posible determinar el total provincial: existen ramas con valores no publicados, no numéricos o nulos.';
+      } else {
+        // Cobertura demostrada completa, sin duplicados y todos publicados con valores válidos
+        totalOedePuestos = latestLetterRecords.reduce((acc, r) => acc + (r.puestos_trabajo as number), 0);
+        oedeDisponible = true;
+      }
     }
   }
 
@@ -270,14 +345,34 @@ function computeData() {
           ? 'Dato bajo secreto estadístico oficial (Ley 17.622).'
           : 'Dato no disponible en la serie oficial.';
       } else if (hasSecret) {
-        // Suma solo las ramas publicadas conocidas, pero marca que no es completo para evitar engaños
-        const validRamas = areaLetters.filter(r => r.puestos_trabajo !== null);
+        // Suma solo las ramas publicadas conocidas, pero marca inequívocamente que es parcial y no equivale al total
+        const validRamas = areaLetters.filter(
+          r => typeof r.puestos_trabajo === 'number' && Number.isFinite(r.puestos_trabajo) && r.estado_dato === 'PUBLICADO'
+        );
         areaPuestos = validRamas.reduce((acc, r) => acc + (r.puestos_trabajo ?? 0), 0);
         isComplete = false;
-        oedeReason = 'Dato parcial: incluye ramas protegidas por secreto estadístico (Ley 17.622).';
+        oedeReason = 'Dato parcial: subtotal de ramas publicadas. No equivale al total del área debido al secreto estadístico oficial (Ley 17.622).';
       } else {
-        areaPuestos = areaLetters.reduce((acc, r) => acc + (r.puestos_trabajo ?? 0), 0);
-        isComplete = true;
+        const allPublished = areaLetters.every(
+          r => typeof r.puestos_trabajo === 'number' && Number.isFinite(r.puestos_trabajo) && r.estado_dato === 'PUBLICADO'
+        );
+        if (allPublished) {
+          areaPuestos = areaLetters.reduce((acc, r) => acc + (r.puestos_trabajo ?? 0), 0);
+          isComplete = true;
+        } else {
+          const validRamas = areaLetters.filter(
+            r => typeof r.puestos_trabajo === 'number' && Number.isFinite(r.puestos_trabajo) && r.estado_dato === 'PUBLICADO'
+          );
+          if (validRamas.length > 0) {
+            areaPuestos = validRamas.reduce((acc, r) => acc + (r.puestos_trabajo ?? 0), 0);
+            isComplete = false;
+            oedeReason = 'Dato parcial: la actividad contiene ramas sin publicación oficial. No equivale al total del área.';
+          } else {
+            areaPuestos = null;
+            isComplete = false;
+            oedeReason = 'Dato no publicado en la serie oficial OEDE.';
+          }
+        }
       }
     } else {
       areaPuestos = null; // Rigor: A10 NUNCA es cero

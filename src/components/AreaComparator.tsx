@@ -78,6 +78,15 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
   const oede2Puestos = ov2?.oede.puestosTrabajo;
   const oede1Avail = ov1?.oede.disponible && oede1Puestos !== null;
   const oede2Avail = ov2?.oede.disponible && oede2Puestos !== null;
+  const oede1Period = oede1Avail ? (ov1?.oede.ultimoPeriodo || '') : '';
+  const oede2Period = oede2Avail ? (ov2?.oede.ultimoPeriodo || '') : '';
+  const areOedePeriodsIdentical = oede1Avail && oede2Avail && oede1Period === oede2Period && oede1Period !== '';
+  const hasOedePeriodMismatch = oede1Avail && oede2Avail && oede1Period !== oede2Period;
+  const oedeHeaderPeriod = areOedePeriodsIdentical
+    ? oede1Period
+    : (oede1Avail && oede2Avail)
+      ? `${oede1Period} vs ${oede2Period}`
+      : (oede1Period || oede2Period || provincial.oedeUltimoPeriodo || 'Período no disponible');
   const maxOede = Math.max(oede1Puestos || 0, oede2Puestos || 0, 1);
 
   // 3. EIL
@@ -371,7 +380,7 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
                 2. Empleo Asalariado Registrado en el Sector Privado (OEDE / SIPA)
               </h3>
               <span className="text-xs text-slate-500">
-                Puestos de trabajo formales privados declarados · Período 2024
+                Puestos de trabajo formales privados declarados · Período {oedeHeaderPeriod}
               </span>
             </div>
           </div>
@@ -409,7 +418,7 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
                 <span>{area1.icono}</span> {area1.nombre} ({area1.area_id})
               </span>
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
-                2024
+                {oede1Avail ? (ov1?.oede.ultimoPeriodo || 's/d') : (area1Id === 'A10' ? 'No aplica' : 'Sin dato')}
               </span>
             </div>
             {oede1Avail ? (
@@ -423,7 +432,7 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
                   </div>
                   {ov1?.oede.tieneSecretoEstadistico && (
                     <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">
-                      Secreto Estadístico (s.d.)
+                      Dato Parcial · Secreto Estadístico
                     </span>
                   )}
                 </div>
@@ -433,6 +442,11 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
                     style={{ width: `${Math.min(100, ((oede1Puestos || 0) / maxOede) * 100)}%` }}
                   />
                 </div>
+                {!ov1?.oede.esCompleto && (
+                  <p className="text-[11px] text-amber-900 bg-amber-50/80 rounded-xl p-2.5 border border-amber-200 leading-snug">
+                    ⚠️ <strong>Subtotal parcial:</strong> No equivale al total del sector ({area1.nombre}) porque contiene ramas bajo secreto estadístico oficial (Ley 17.622).
+                  </p>
+                )}
               </>
             ) : (
               <div className="p-3 bg-slate-100 rounded-xl text-xs text-slate-600 italic">
@@ -448,7 +462,7 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
                 <span>{area2.icono}</span> {area2.nombre} ({area2.area_id})
               </span>
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
-                2024
+                {oede2Avail ? (ov2?.oede.ultimoPeriodo || 's/d') : (area2Id === 'A10' ? 'No aplica' : 'Sin dato')}
               </span>
             </div>
             {oede2Avail ? (
@@ -462,7 +476,7 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
                   </div>
                   {ov2?.oede.tieneSecretoEstadistico && (
                     <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">
-                      Secreto Estadístico (s.d.)
+                      Dato Parcial · Secreto Estadístico
                     </span>
                   )}
                 </div>
@@ -472,6 +486,11 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
                     style={{ width: `${Math.min(100, ((oede2Puestos || 0) / maxOede) * 100)}%` }}
                   />
                 </div>
+                {!ov2?.oede.esCompleto && (
+                  <p className="text-[11px] text-amber-900 bg-amber-50/80 rounded-xl p-2.5 border border-amber-200 leading-snug">
+                    ⚠️ <strong>Subtotal parcial:</strong> No equivale al total del sector ({area2.nombre}) porque contiene ramas bajo secreto estadístico oficial (Ley 17.622).
+                  </p>
+                )}
               </>
             ) : (
               <div className="p-3 bg-slate-100 rounded-xl text-xs text-slate-600 italic">
@@ -479,6 +498,56 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Conclusión y Comparabilidad OEDE */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-2">
+          {oede1Avail && oede2Avail ? (
+            !hasOedePeriodMismatch && areOedePeriodsIdentical ? (
+              <>
+                <p className="leading-relaxed">
+                  <strong>Comparabilidad temporal válida:</strong> Ambos indicadores corresponden al mismo período ({oede1Period}) y a la misma unidad homogénea (puestos asalariados registrados en el sector privado según SIPA).
+                </p>
+                {(!ov1?.oede.esCompleto || !ov2?.oede.esCompleto) ? (
+                  <p className="text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 font-medium">
+                    ⚠️ <strong>Comparación limitada:</strong> Uno o ambos sectores poseen cobertura parcial por secreto estadístico. Los valores no representan el total completo del sector y no deben compararse como magnitudes exhaustivas.
+                  </p>
+                ) : (
+                  <p className="text-slate-800 font-medium">
+                    👥 <strong>Diferencia sectorial:</strong>{' '}
+                    {oede1Puestos! > oede2Puestos! ? (
+                      <>
+                        <strong>{area1.nombre}</strong> registra {formatNumber(oede1Puestos! - oede2Puestos!, 0)} puestos registrados más que <strong>{area2.nombre}</strong>.
+                      </>
+                    ) : oede1Puestos! < oede2Puestos! ? (
+                      <>
+                        <strong>{area2.nombre}</strong> registra {formatNumber(oede2Puestos! - oede1Puestos!, 0)} puestos registrados más que <strong>{area1.nombre}</strong>.
+                      </>
+                    ) : (
+                      <>Ambos sectores registran exactamente la misma cantidad de puestos de trabajo ({formatNumber(oede1Puestos!, 0)}).</>
+                    )}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 space-y-1">
+                <div className="flex items-center gap-2 font-bold text-sm text-amber-800">
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <span>Discrepancia Temporal en OEDE</span>
+                </div>
+                <p className="leading-relaxed">
+                  Los registros no corresponden al mismo período: <strong>{area1.nombre}</strong> cuenta con datos de <strong>{oede1Period}</strong> mientras que <strong>{area2.nombre}</strong> cuenta con datos de <strong>{oede2Period}</strong>. Por rigor estadístico, <strong>no se comparan magnitudes directamente</strong> al carecer de homogeneidad temporal.
+                </p>
+              </div>
+            )
+          ) : (
+            <p className="text-slate-600 italic">
+              No es posible realizar una comparación directa de empleo formal porque una o ambas actividades no cuentan con serie en OEDE para el período seleccionado.
+            </p>
+          )}
+          <p className="text-slate-500 text-[11px]">
+            ℹ️ <em>Fuente oficial:</em> Sistema Integrado Previsional Argentino (SIPA) / Observatorio de Empleo y Dinámica Empresarial (OEDE). No incluye empleo informal, monotributistas, autónomos ni administración pública.
+          </p>
         </div>
       </section>
 
