@@ -124,13 +124,17 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-1">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
                 <TrendingUp className="w-4 h-4" />
-                <span>Producción Provincial (PBG 2024*)</span>
+                <span>Producción Provincial (PBG {provincial.pbgUltimoAnio || 2024}{provincial.pbgEsProvisorio ? '*' : ''})</span>
               </div>
               <div className="text-xl sm:text-2xl font-black text-white">
-                $6,47 mil millones
+                {provincial.pbgTotalConstanteMiles !== null
+                  ? `$${(provincial.pbgTotalConstanteMiles / 1000000).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mil millones`
+                  : 'No disponible'}
               </div>
               <p className="text-[11px] text-slate-400">
-                A precios constantes de 2004 ($5,48 billones corrientes).
+                {provincial.pbgTotalConstanteMiles !== null && provincial.pbgTotalCorrienteMiles !== null
+                  ? `A precios constantes de 2004 ($${(provincial.pbgTotalCorrienteMiles / 1000000000).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} billones corrientes).`
+                  : (provincial.pbgMotivoNoDisponible || 'Valores de PBG provincial no disponibles.')}
               </p>
             </div>
 
@@ -141,10 +145,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <span>Trabajo Registrado (OEDE)</span>
               </div>
               <div className="text-xl sm:text-2xl font-black text-white">
-                {provincial.oedeTotalPuestosRegistrados.toLocaleString('es-AR')} puestos
+                {provincial.oedeTotalPuestosRegistrados !== null
+                  ? `${provincial.oedeTotalPuestosRegistrados.toLocaleString('es-AR')} puestos`
+                  : 'No disponible'}
               </div>
               <p className="text-[11px] text-slate-400">
-                Asalariados formales del sector privado (1° Trim 2026).
+                {provincial.oedeDisponible
+                  ? `Asalariados formales del sector privado (${provincial.oedeUltimoPeriodo}).`
+                  : (provincial.oedeMotivoNoDisponible || 'Dato oficial de empleo privado no disponible.')}
               </p>
             </div>
 
@@ -203,7 +211,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               ? `${overview.oede.puestosTrabajo.toLocaleString('es-AR')} puestos`
               : 'No relevado en SIPA';
 
-            const pbgShareLabel = overview?.pbg.porcentajeProvincial
+            const pbgShareLabel = (overview?.pbg.porcentajeProvincial !== null && overview?.pbg.porcentajeProvincial !== undefined)
               ? `${overview.pbg.porcentajeProvincial}% del PBG`
               : null;
 

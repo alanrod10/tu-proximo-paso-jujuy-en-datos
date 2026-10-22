@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import * as path from 'path';
+import * as fs from 'fs';
 
 test.describe('Fase 4: Modo Comparador y Dinámica Laboral Transversal (EIL)', () => {
   test('Comparator: loads via hash #comparador, allows swapping areas and switching price modes', async ({ page }) => {
@@ -156,29 +157,76 @@ test.describe('Fase 4: Modo Comparador y Dinámica Laboral Transversal (EIL)', (
     await expect(page.getByText(/Agrupación Indivisible/i).first()).toBeVisible();
   });
 
-  test('Captures responsive visual snapshots of Fase 4 comparator and EIL transversal', async ({ page }) => {
-    const artifactDir = '/home/alanrod10/.gemini/antigravity-cli/brain/cc802746-dfc9-4808-9b48-64cac8121cc9';
+  test('PBG Consistency Regression: switches between constant and current prices updating percentages, values, and bars coherently', async ({ page }) => {
+    await page.goto('/#comparador');
+    await page.waitForLoadState('networkidle');
+
+    const sel1 = page.locator('select[aria-label="Seleccionar Área 1 para comparar"]');
+    const sel2 = page.locator('select[aria-label="Seleccionar Área 2 para comparar"]');
+
+    // Seleccionar A01 (Agro) y A06 (Comercio)
+    await sel1.selectOption('A01');
+    await sel2.selectOption('A06');
+
+    // 1. En modo Precios Constantes (por defecto)
+    // A01: ~$367.447 mil / $6.465.553 mil = 5.68%
+    // A06: ~$917.755 mil / $6.465.553 mil = 14.19%
+    await expect(page.getByText('5.68%')).toBeVisible();
+    await expect(page.getByText('14.19%')).toBeVisible();
+    await expect(page.getByText('Miles $ de 2004').first()).toBeVisible();
+    await expect(page.getByText(/aporta 8.51 puntos porcentuales más/i)).toBeVisible();
+
+    // 2. Cambiar a Precios Corrientes (Nominal)
+    const btnCorriente = page.getByRole('button', { name: /Precios Corrientes/i });
+    await btnCorriente.click();
+
+    // En precios corrientes para 2024:
+    // A01: ~$245.166.610 mil / $5.478.133.735 mil = 4.48%
+    // A06: ~$981.839.620 mil / $5.478.133.735 mil = 17.92%
+    await expect(page.getByText('4.48%')).toBeVisible();
+    await expect(page.getByText('17.92%')).toBeVisible();
+    await expect(page.getByText('Miles $ corrientes').first()).toBeVisible();
+    // La diferencia en corrientes debe ser 17.92 - 4.48 = 13.44 pp
+    await expect(page.getByText(/aporta 13.44 puntos porcentuales más/i)).toBeVisible();
+
+    // 3. Volver a Precios Constantes y verificar restauración
+    const btnConstante = page.getByRole('button', { name: /Precios Constantes 2004/i });
+    await btnConstante.click();
+    await expect(page.getByText('5.68%')).toBeVisible();
+    await expect(page.getByText('14.19%')).toBeVisible();
+    await expect(page.getByText(/aporta 8.51 puntos porcentuales más/i)).toBeVisible();
+  });
+
+  test('Captures responsive visual snapshots of Fase 4 comparator and EIL transversal', async ({ page }, testInfo) => {
+    const saveSnapshot = async (filename: string) => {
+      const targetPath = process.env.SCREENSHOT_DIR
+        ? path.join(process.env.SCREENSHOT_DIR, filename)
+        : testInfo.outputPath(filename);
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      await page.screenshot({ path: targetPath, fullPage: false });
+      await testInfo.attach(filename, { path: targetPath, contentType: 'image/png' });
+    };
 
     // 1. Desktop: Modo Comparador
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/#comparador');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase4-comparador-desktop.png'), fullPage: false });
+    await saveSnapshot('fase4-comparador-desktop.png');
 
     // 2. Desktop: EIL Transversal
     await page.goto('/#transversal');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase4-eil-transversal-desktop.png'), fullPage: false });
+    await saveSnapshot('fase4-eil-transversal-desktop.png');
 
     // 3. Mobile: Modo Comparador
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/#comparador');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase4-comparador-mobile.png'), fullPage: false });
+    await saveSnapshot('fase4-comparador-mobile.png');
 
     // 4. Mobile: EIL Transversal
     await page.goto('/#transversal');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase4-eil-transversal-mobile.png'), fullPage: false });
+    await saveSnapshot('fase4-eil-transversal-mobile.png');
   });
 });

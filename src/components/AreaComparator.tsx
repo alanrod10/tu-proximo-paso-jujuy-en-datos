@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Area, AreaId } from '../types';
-import { getAreaOverview } from '../data-access/dataAdapter';
+import { getAreaOverview, getProvincialOverview } from '../data-access/dataAdapter';
 import { formatNumber } from '../utils/formatters';
 import {
   ArrowLeftRight,
@@ -51,12 +51,27 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
   };
 
   // Comparaciones estadísticas rigurosas
-  // 1. PBG
-  const pbg1Val = pbgPriceMode === 'constante' ? ov1?.pbg.valorConstanteMiles : ov1?.pbg.valorCorrienteMiles;
-  const pbg2Val = pbgPriceMode === 'constante' ? ov2?.pbg.valorConstanteMiles : ov2?.pbg.valorCorrienteMiles;
-  const pbg1Pct = ov1?.pbg.porcentajeProvincial || 0;
-  const pbg2Pct = ov2?.pbg.porcentajeProvincial || 0;
-  const maxPbgPct = Math.max(pbg1Pct, pbg2Pct, 0.1);
+  const provincial = getProvincialOverview();
+
+  // 1. PBG: cálculo dinámico y estrictamente consistente con el modo de precios seleccionado
+  const isConstante = pbgPriceMode === 'constante';
+  const totalProvPbg = isConstante
+    ? provincial.pbgTotalConstanteMiles
+    : provincial.pbgTotalCorrienteMiles;
+
+  const pbg1Val = isConstante ? ov1?.pbg.valorConstanteMiles : ov1?.pbg.valorCorrienteMiles;
+  const pbg2Val = isConstante ? ov2?.pbg.valorConstanteMiles : ov2?.pbg.valorCorrienteMiles;
+
+  const pbg1Pct = (pbg1Val !== null && pbg1Val !== undefined && totalProvPbg !== null && totalProvPbg > 0)
+    ? Number(((pbg1Val / totalProvPbg) * 100).toFixed(2))
+    : null;
+
+  const pbg2Pct = (pbg2Val !== null && pbg2Val !== undefined && totalProvPbg !== null && totalProvPbg > 0)
+    ? Number(((pbg2Val / totalProvPbg) * 100).toFixed(2))
+    : null;
+
+  const canComparePbg = pbg1Pct !== null && pbg2Pct !== null && totalProvPbg !== null;
+  const maxPbgPct = canComparePbg ? Math.max(pbg1Pct, pbg2Pct, 0.1) : 0.1;
 
   // 2. OEDE
   const oede1Puestos = ov1?.oede.puestosTrabajo;
@@ -257,16 +272,18 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
             <div className="flex items-baseline justify-between">
               <div>
                 <div className="text-2xl font-black text-slate-900 font-mono">
-                  {pbg1Pct}%
+                  {pbg1Pct !== null ? `${pbg1Pct}%` : 's/d'}
                 </div>
-                <div className="text-xs text-slate-500">del total provincial de Jujuy</div>
+                <div className="text-xs text-slate-500">
+                  del PBG provincial ({isConstante ? 'precios constantes 2004' : 'precios corrientes'})
+                </div>
               </div>
               <div className="text-right">
                 <div className="text-sm font-bold text-slate-700 font-mono">
-                  ${formatNumber(pbg1Val || 0, 0)} mil
+                  {pbg1Val !== null && pbg1Val !== undefined ? `$${formatNumber(pbg1Val, 0)} mil` : 'Sin dato'}
                 </div>
                 <div className="text-[11px] text-slate-400">
-                  {pbgPriceMode === 'constante' ? 'Miles $ de 2004' : 'Miles $ corrientes'}
+                  {isConstante ? 'Miles $ de 2004' : 'Miles $ corrientes'}
                 </div>
               </div>
             </div>
@@ -274,7 +291,7 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
             <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-brand-600 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (pbg1Pct / maxPbgPct) * 100)}%` }}
+                style={{ width: `${canComparePbg ? Math.min(100, ((pbg1Pct || 0) / maxPbgPct) * 100) : 0}%` }}
               />
             </div>
           </div>
@@ -292,16 +309,18 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
             <div className="flex items-baseline justify-between">
               <div>
                 <div className="text-2xl font-black text-slate-900 font-mono">
-                  {pbg2Pct}%
+                  {pbg2Pct !== null ? `${pbg2Pct}%` : 's/d'}
                 </div>
-                <div className="text-xs text-slate-500">del total provincial de Jujuy</div>
+                <div className="text-xs text-slate-500">
+                  del PBG provincial ({isConstante ? 'precios constantes 2004' : 'precios corrientes'})
+                </div>
               </div>
               <div className="text-right">
                 <div className="text-sm font-bold text-slate-700 font-mono">
-                  ${formatNumber(pbg2Val || 0, 0)} mil
+                  {pbg2Val !== null && pbg2Val !== undefined ? `$${formatNumber(pbg2Val, 0)} mil` : 'Sin dato'}
                 </div>
                 <div className="text-[11px] text-slate-400">
-                  {pbgPriceMode === 'constante' ? 'Miles $ de 2004' : 'Miles $ corrientes'}
+                  {isConstante ? 'Miles $ de 2004' : 'Miles $ corrientes'}
                 </div>
               </div>
             </div>
@@ -309,24 +328,33 @@ export const AreaComparator: React.FC<AreaComparatorProps> = ({
             <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (pbg2Pct / maxPbgPct) * 100)}%` }}
+                style={{ width: `${canComparePbg ? Math.min(100, ((pbg2Pct || 0) / maxPbgPct) * 100) : 0}%` }}
               />
             </div>
           </div>
         </div>
 
         {/* Síntesis metodológica PBG */}
-        <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs text-emerald-950 flex items-start gap-2.5">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-          <div className="leading-relaxed">
-            <strong>Comparabilidad válida:</strong> Ambos indicadores corresponden al mismo período (2024, provisorio) y a la misma unidad homogénea ({pbgPriceMode === 'constante' ? 'precios constantes con base 2004 para evaluar volumen real' : 'precios nominales corrientes'}).
-            {pbg1Pct > pbg2Pct
-              ? ` ${area1.nombre} aporta ${formatNumber(pbg1Pct - pbg2Pct, 2)} puntos porcentuales más de producto provincial que ${area2.nombre}.`
-              : pbg2Pct > pbg1Pct
-              ? ` ${area2.nombre} aporta ${formatNumber(pbg2Pct - pbg1Pct, 2)} puntos porcentuales más de producto provincial que ${area1.nombre}.`
-              : ' Ambas áreas tienen una participación equivalente en el PBG provincial.'}
+        {canComparePbg ? (
+          <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs text-emerald-950 flex items-start gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <div className="leading-relaxed">
+              <strong>Comparabilidad válida:</strong> Ambos indicadores corresponden al mismo período (2024, provisorio *) y a la misma unidad homogénea ({isConstante ? 'precios constantes con base 2004 para evaluar volumen real' : 'precios nominales corrientes'}).
+              {pbg1Pct! > pbg2Pct!
+                ? ` ${area1.nombre} aporta ${formatNumber(pbg1Pct! - pbg2Pct!, 2)} puntos porcentuales más de producto provincial que ${area2.nombre}.`
+                : pbg2Pct! > pbg1Pct!
+                ? ` ${area2.nombre} aporta ${formatNumber(pbg2Pct! - pbg1Pct!, 2)} puntos porcentuales más de producto provincial que ${area1.nombre}.`
+                : ' Ambas áreas tienen una participación equivalente en el PBG provincial.'}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-2xl text-xs text-amber-950 flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="leading-relaxed">
+              No hay datos oficiales suficientes para comparar la participación relativa en el PBG provincial para este corte temporal.
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ========================================================================= */}

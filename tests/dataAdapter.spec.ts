@@ -125,4 +125,171 @@ test.describe('Statistical Integrity Validation (dataAdapter)', () => {
       expect(a.mip.anioBase).toBe(2015);
     }
   });
+
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      if (adapter?.setAdapterOverrides) {
+        adapter.setAdapterOverrides(null);
+      }
+    });
+  });
+
+  test('PBG Regression: Missing TOTAL record results in null total and pbgDisponible false without artificial fallback (6471196)', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      // Inyectar dataset PBG sin registro TOTAL
+      adapter.setAdapterOverrides({
+        pbg: {
+          metadata: { fuente: 'DIPEC', descripcion: 'PBG Test' },
+          series: [
+            {
+              periodo_anio: 2024,
+              codigo_rama: 'A',
+              nombre_rama: 'Agricultura',
+              area_id: 'A01',
+              valor_constante: 367447,
+              valor_corriente: 245166610,
+              es_provisorio: true,
+              unidad_medida: 'Miles de pesos'
+            }
+          ]
+        }
+      });
+      const provincial = adapter.getProvincialOverview();
+      const a01 = adapter.getAreaOverview('A01');
+      return { provincial, a01 };
+    });
+
+    // Sin registro TOTAL, el total provincial debe ser estrictamente null (nunca 6471196 o 5483568000)
+    expect(result.provincial.pbgTotalConstanteMiles).toBeNull();
+    expect(result.provincial.pbgTotalCorrienteMiles).toBeNull();
+    expect(result.provincial.pbgDisponible).toBe(false);
+    expect(result.provincial.pbgMotivoNoDisponible).toBeDefined();
+
+    // Sin total provincial, el porcentaje del área debe ser null (no NaN ni 0 artificial)
+    expect(result.a01?.pbg.porcentajeProvincial).toBeNull();
+    expect(result.a01?.pbg.porcentajeProvincialConstante).toBeNull();
+    expect(result.a01?.pbg.porcentajeProvincialCorriente).toBeNull();
+  });
+
+  test('PBG Regression: Area missing from PBG dataset results in porcentajeProvincial: null, not 0 without justification', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      // Inyectar dataset PBG con TOTAL pero sin registros para el área A01
+      adapter.setAdapterOverrides({
+        pbg: {
+          metadata: { fuente: 'DIPEC', descripcion: 'PBG Test' },
+          series: [
+            {
+              periodo_anio: 2024,
+              codigo_rama: 'TOTAL',
+              nombre_rama: 'Producto Bruto Geográfico Total',
+              area_id: null,
+              valor_constante: 6000000,
+              valor_corriente: 5000000000,
+              es_provisorio: false,
+              unidad_medida: 'Miles de pesos'
+            },
+            {
+              periodo_anio: 2024,
+              codigo_rama: 'C',
+              nombre_rama: 'Industria Manufacturera',
+              area_id: 'A03',
+              valor_constante: 1200000,
+              valor_corriente: 1000000000,
+              es_provisorio: false,
+              unidad_medida: 'Miles de pesos'
+            }
+          ]
+        }
+      });
+      const a01 = adapter.getAreaOverview('A01');
+      const a03 = adapter.getAreaOverview('A03');
+      return { a01, a03 };
+    });
+
+    // A01 no tiene registros en la serie
+    expect(result.a01?.pbg.disponible).toBe(false);
+    expect(result.a01?.pbg.valorConstanteMiles).toBeNull();
+    expect(result.a01?.pbg.valorCorrienteMiles).toBeNull();
+    // Rigor: NUNCA reemplazar por 0 sin advertencia
+    expect(result.a01?.pbg.porcentajeProvincial).toBeNull();
+    expect(result.a01?.pbg.porcentajeProvincialConstante).toBeNull();
+    expect(result.a01?.pbg.porcentajeProvincialCorriente).toBeNull();
+    expect(result.a01?.pbg.motivoNoDisponible).toContain('No se registran datos oficiales de PBG');
+
+    // A03 sí tiene registros y porcentaje válido
+    expect(result.a03?.pbg.disponible).toBe(true);
+    expect(result.a03?.pbg.porcentajeProvincialConstante).toBe(20); // 1200000 / 6000000 = 20%
+  });
+
+  test('OEDE Regression: Empty or missing totals results in null puestos and oedeDisponible false without artificial fallback (63017)', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      // Inyectar dataset OEDE vacío
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series: []
+        }
+      });
+      const provincial = adapter.getProvincialOverview();
+      const a01 = adapter.getAreaOverview('A01');
+      return { provincial, a01 };
+    });
+
+    // Total provincial debe ser null (nunca fallback artificial 63017)
+    expect(result.provincial.oedeTotalPuestosRegistrados).toBeNull();
+    expect(result.provincial.oedeDisponible).toBe(false);
+    expect(result.provincial.oedeMotivoNoDisponible).toBeDefined();
+
+    // Área sin datos
+    expect(result.a01?.oede.disponible).toBe(false);
+    expect(result.a01?.oede.puestosTrabajo).toBeNull();
+  });
+
+  test('OEDE Regression: Statistical secrecy handling prevents calculating full provincial total without warning', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      // Inyectar dataset OEDE sin nivel TOTAL, con registros de ramas donde una tiene secreto
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series: [
+            {
+              periodo: '1° Trim 2026',
+              tipo_nivel: 'LETRA',
+              codigo_actividad: 'A',
+              nombre_actividad: 'Agricultura',
+              area_id: 'A01',
+              puestos_trabajo: 9000,
+              estado_dato: 'PUBLICADO'
+            },
+            {
+              periodo: '1° Trim 2026',
+              tipo_nivel: 'LETRA',
+              codigo_actividad: 'B',
+              nombre_actividad: 'Pesca',
+              area_id: 'A01',
+              puestos_trabajo: null,
+              estado_dato: 'SIN_DATO_SECRETO_ESTADISTICO'
+            }
+          ]
+        }
+      });
+      const provincial = adapter.getProvincialOverview();
+      const a01 = adapter.getAreaOverview('A01');
+      return { provincial, a01 };
+    });
+
+    // El total no se puede computar sumando letras si hay secreto estadístico
+    expect(result.provincial.oedeTotalPuestosRegistrados).toBeNull();
+    expect(result.provincial.oedeDisponible).toBe(false);
+    expect(result.provincial.oedeMotivoNoDisponible).toContain('secreto estadístico');
+
+    // El área A01 que agrupa ramas con secreto debe marcar tieneSecretoEstadistico: true y esCompleto: false
+    expect(result.a01?.oede.tieneSecretoEstadistico).toBe(true);
+    expect(result.a01?.oede.esCompleto).toBe(false);
+  });
 });

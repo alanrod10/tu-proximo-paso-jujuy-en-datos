@@ -85,8 +85,10 @@ export const AreaDetailPage: React.FC<AreaDetailPageProps> = ({
   const latestPbgCorriente = latestPbgRecs.reduce((acc, r) => acc + (r.valor_corriente || 0), 0);
 
   const totalProvincialPbgConstante = pbgData.series
-    .find((r) => r.codigo_rama === 'TOTAL' && r.periodo_anio === latestPbgYear)?.valor_constante || 6465553;
-  const pbgSharePct = totalProvincialPbgConstante > 0 ? ((latestPbgConstante / totalProvincialPbgConstante) * 100).toFixed(1) : '0';
+    .find((r) => r.codigo_rama === 'TOTAL' && r.periodo_anio === latestPbgYear)?.valor_constante ?? null;
+  const pbgSharePct = (totalProvincialPbgConstante !== null && totalProvincialPbgConstante > 0)
+    ? ((latestPbgConstante / totalProvincialPbgConstante) * 100).toFixed(1)
+    : 's/d';
 
   // Datos para gráfico PBG
   const filteredPbgSeries = pbgRange === 'ultimos5'

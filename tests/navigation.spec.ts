@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import * as path from 'path';
+import * as fs from 'fs';
 
 test.describe('Navigation and Browser History functionality', () => {
   test('direct hash navigation loads expected views', async ({ page }) => {
@@ -16,11 +18,16 @@ test.describe('Navigation and Browser History functionality', () => {
     await expect(page.locator('text=Volver al Explorador de Áreas').first()).toBeVisible();
   });
 
-  test('browser back and forward buttons work as expected', async ({ page }) => {
+  test('browser back and forward buttons work as expected', async ({ page }, testInfo) => {
     await page.goto('/');
 
     // Screenshot of redesigned header and hero in Fase 1
-    await page.screenshot({ path: 'test-results/screenshots/fase1-home-header.png', fullPage: false });
+    const targetHeader = process.env.SCREENSHOT_DIR
+      ? path.join(process.env.SCREENSHOT_DIR, 'fase1-home-header.png')
+      : testInfo.outputPath('fase1-home-header.png');
+    fs.mkdirSync(path.dirname(targetHeader), { recursive: true });
+    await page.screenshot({ path: targetHeader, fullPage: false });
+    await testInfo.attach('fase1-home-header.png', { path: targetHeader, contentType: 'image/png' });
 
     // Navigate from home to areas
     await page.getByRole('button', { name: '12 Áreas de Jujuy' }).click();
@@ -60,7 +67,7 @@ test.describe('Navigation and Browser History functionality', () => {
     await expect(page.locator('text=Tu Próximo Paso').first()).toBeVisible();
   });
 
-  test('respects prefers-reduced-motion media query and captures responsive snapshots', async ({ page }) => {
+  test('respects prefers-reduced-motion media query and captures responsive snapshots', async ({ page }, testInfo) => {
     // Emulate prefers-reduced-motion
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
@@ -76,12 +83,21 @@ test.describe('Navigation and Browser History functionality', () => {
     // With prefers-reduced-motion: reduce, animation-duration is 0.001ms / 1e-06s / 0s
     expect(duration).toMatch(/^(0s|0\.000001s|1e-06s|0\.001ms|none)$/);
 
+    const saveSnapshot = async (filename: string) => {
+      const targetPath = process.env.SCREENSHOT_DIR
+        ? path.join(process.env.SCREENSHOT_DIR, filename)
+        : testInfo.outputPath(filename);
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      await page.screenshot({ path: targetPath, fullPage: false });
+      await testInfo.attach(filename, { path: targetPath, contentType: 'image/png' });
+    };
+
     // Desktop screenshot
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.screenshot({ path: 'test-results/screenshots/fase1-desktop.png', fullPage: false });
+    await saveSnapshot('fase1-desktop.png');
 
     // Mobile viewport screenshot
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.screenshot({ path: 'test-results/screenshots/fase1-mobile.png', fullPage: false });
+    await saveSnapshot('fase1-mobile.png');
   });
 });

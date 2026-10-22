@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import * as path from 'path';
+import * as fs from 'fs';
 
 test.describe('Redesigned Area Detail Page (Fase 3)', () => {
   test('renders header KPIs, area pager, and sticky tabs on A01 (Agro)', async ({ page }) => {
@@ -87,21 +89,30 @@ test.describe('Redesigned Area Detail Page (Fase 3)', () => {
     await expect(page.locator('th:has-text("Denominación Oficial en la Fuente")')).toBeVisible();
   });
 
-  test('captures responsive visual snapshots of Fase 3 area detail', async ({ page }) => {
+  test('captures responsive visual snapshots of Fase 3 area detail', async ({ page }, testInfo) => {
+    const saveSnapshot = async (filename: string) => {
+      const targetPath = process.env.SCREENSHOT_DIR
+        ? path.join(process.env.SCREENSHOT_DIR, filename)
+        : testInfo.outputPath(filename);
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      await page.screenshot({ path: targetPath, fullPage: false });
+      await testInfo.attach(filename, { path: targetPath, contentType: 'image/png' });
+    };
+
     // 1. Desktop detail view on PBG tab
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/#detalle/A02');
     await page.getByRole('button', { name: '📊 Producción (PBG)' }).click();
-    await page.screenshot({ path: 'test-results/screenshots/fase3-areadetail-pbg.png', fullPage: false });
+    await saveSnapshot('fase3-areadetail-pbg.png');
 
     // 2. Desktop detail view on A10 showing explicit missing data notice
     await page.goto('/#detalle/A10');
     await page.getByRole('button', { name: '👥 Empleo Registrado (OEDE)' }).click();
-    await page.screenshot({ path: 'test-results/screenshots/fase3-areadetail-a10-missing.png', fullPage: false });
+    await saveSnapshot('fase3-areadetail-a10-missing.png');
 
     // 3. Mobile view on area detail
     await page.setViewportSize({ width: 375, height: 750 });
     await page.goto('/#detalle/A01');
-    await page.screenshot({ path: 'test-results/screenshots/fase3-areadetail-mobile.png', fullPage: false });
+    await saveSnapshot('fase3-areadetail-mobile.png');
   });
 });

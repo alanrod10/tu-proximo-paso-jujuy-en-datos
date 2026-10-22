@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import * as path from 'path';
+import * as fs from 'fs';
 
 test.describe('Global Search and Redesigned Home Page (Fase 2)', () => {
   test.beforeEach(async ({ page }) => {
@@ -21,22 +23,31 @@ test.describe('Global Search and Redesigned Home Page (Fase 2)', () => {
     await expect(page.locator('text=Salud').first()).toBeVisible();
   });
 
-  test('captures visual snapshots of Fase 2 redesigned home and search dropdown', async ({ page }) => {
+  test('captures visual snapshots of Fase 2 redesigned home and search dropdown', async ({ page }, testInfo) => {
+    const saveSnapshot = async (filename: string) => {
+      const targetPath = process.env.SCREENSHOT_DIR
+        ? path.join(process.env.SCREENSHOT_DIR, filename)
+        : testInfo.outputPath(filename);
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      await page.screenshot({ path: targetPath, fullPage: false });
+      await testInfo.attach(filename, { path: targetPath, contentType: 'image/png' });
+    };
+
     // 1. Desktop full home
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/');
-    await page.screenshot({ path: 'test-results/screenshots/fase2-desktop.png', fullPage: false });
+    await saveSnapshot('fase2-desktop.png');
 
     // 2. Search dropdown open with autocomplete results
     const heroInput = page.getByPlaceholder('Buscar por actividad, oficio o producto (ej. tabaco, litio, comercio)...');
     await heroInput.fill('comercio');
     await expect(page.locator("button[role='option']").first()).toBeVisible();
-    await page.screenshot({ path: 'test-results/screenshots/fase2-search-dropdown.png', fullPage: false });
+    await saveSnapshot('fase2-search-dropdown.png');
 
     // 3. Mobile view
     await page.setViewportSize({ width: 375, height: 750 });
     await page.goto('/');
-    await page.screenshot({ path: 'test-results/screenshots/fase2-mobile.png', fullPage: false });
+    await saveSnapshot('fase2-mobile.png');
   });
 
   test('home hero search: differentiates official, partial, and non-applicable classifications', async ({ page }) => {

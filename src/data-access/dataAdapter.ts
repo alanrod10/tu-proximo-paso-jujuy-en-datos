@@ -20,17 +20,21 @@ export interface AreaOverview {
   icono: string;
   pbg: {
     disponible: boolean;
-    ultimoAnio: number;
+    ultimoAnio: number | null;
     esProvisorio: boolean;
-    valorConstanteMiles: number;
-    valorCorrienteMiles: number;
-    porcentajeProvincial: number;
+    valorConstanteMiles: number | null;
+    valorCorrienteMiles: number | null;
+    porcentajeProvincial: number | null;
+    porcentajeProvincialConstante: number | null;
+    porcentajeProvincialCorriente: number | null;
+    motivoNoDisponible?: string;
   };
   oede: {
     disponible: boolean;
     ultimoPeriodo: string;
     puestosTrabajo: number | null;
     tieneSecretoEstadistico: boolean;
+    esCompleto: boolean;
     motivoNoDisponible?: string;
   };
   eil: {
@@ -51,12 +55,16 @@ export interface AreaOverview {
 }
 
 export interface ProvincialOverview {
-  pbgTotalConstanteMiles: number;
-  pbgTotalCorrienteMiles: number;
-  pbgUltimoAnio: number;
+  pbgTotalConstanteMiles: number | null;
+  pbgTotalCorrienteMiles: number | null;
+  pbgUltimoAnio: number | null;
   pbgEsProvisorio: boolean;
-  oedeTotalPuestosRegistrados: number;
+  pbgDisponible: boolean;
+  pbgMotivoNoDisponible?: string;
+  oedeTotalPuestosRegistrados: number | null;
   oedeUltimoPeriodo: string;
+  oedeDisponible: boolean;
+  oedeMotivoNoDisponible?: string;
 }
 
 export interface MIPStructuralOverview {
@@ -74,44 +82,110 @@ export interface EILMethodologyRules {
   reglas: string[];
 }
 
+export interface DataAdapterOverrides {
+  areas?: Area[];
+  pbg?: PBGDataset;
+  oede?: OEDEDataset;
+  eil?: EILDataset;
+  mip?: MIPDataset;
+}
+
 // Cálculo cacheado en memoria para evitar recomputar en cada render
 let cachedOverviews: Map<AreaId, AreaOverview> | null = null;
 let cachedProvincial: ProvincialOverview | null = null;
 let cachedMipStructure: MIPStructuralOverview | null = null;
 let cachedEilRules: EILMethodologyRules | null = null;
+let activeOverrides: DataAdapterOverrides | null = null;
+
+export function resetAdapterCache(): void {
+  cachedOverviews = null;
+  cachedProvincial = null;
+  cachedMipStructure = null;
+  cachedEilRules = null;
+}
+
+export function setAdapterOverrides(overrides: DataAdapterOverrides | null): void {
+  activeOverrides = overrides;
+  resetAdapterCache();
+}
 
 function computeData() {
-  const areas = defaultAreas as Area[];
-  const pbg = defaultPbg as PBGDataset;
-  const oede = defaultOede as OEDEDataset;
-  const eil = defaultEil as EILDataset;
-  const mip = defaultMip as MIPDataset;
+  const areas = activeOverrides?.areas ?? (defaultAreas as Area[]);
+  const pbg = activeOverrides?.pbg ?? (defaultPbg as PBGDataset);
+  const oede = activeOverrides?.oede ?? (defaultOede as OEDEDataset);
+  const eil = activeOverrides?.eil ?? (defaultEil as EILDataset);
+  const mip = activeOverrides?.mip ?? (defaultMip as MIPDataset);
 
   // 1. PBG Provincial Total
-  const latestPbgYear = Math.max(...pbg.series.map(r => r.periodo_anio));
-  const totalProvincialPbgConstante = pbg.series
-    .find(r => r.codigo_rama === 'TOTAL' && r.periodo_anio === latestPbgYear)?.valor_constante || 6471196;
-  const totalProvincialPbgCorriente = pbg.series
-    .find(r => r.codigo_rama === 'TOTAL' && r.periodo_anio === latestPbgYear)?.valor_corriente || 5483568000;
-  const isPbgProvisorio = pbg.metadata.anios_provisorios?.includes(latestPbgYear) ?? true;
+  const pbgYears = Array.from(new Set(pbg.series.map(r => r.periodo_anio))).filter(
+    (y): y is number => typeof y === 'number' && !isNaN(y)
+  );
+  const latestPbgYear = pbgYears.length > 0 ? Math.max(...pbgYears) : null;
+
+  const latestPbgRecord = latestPbgYear !== null
+    ? pbg.series.find(r => r.codigo_rama === 'TOTAL' && r.periodo_anio === latestPbgYear)
+    : null;
+
+  // Rigor estadístico: obtener exclusivamente de la fuente sin números de respaldo artificiales
+  const totalProvincialPbgConstante = latestPbgRecord?.valor_constante ?? null;
+  const totalProvincialPbgCorriente = latestPbgRecord?.valor_corriente ?? null;
+  const isPbgProvisorio = latestPbgRecord?.es_provisorio ?? (
+    latestPbgYear !== null ? (pbg.metadata?.anios_provisorios?.includes(latestPbgYear) ?? true) : false
+  );
+  const isPbgAvailable = totalProvincialPbgConstante !== null || totalProvincialPbgCorriente !== null;
 
   // 2. OEDE Provincial Total
-  const oedePeriods = Array.from(new Set(oede.series.map(r => r.periodo)));
-  const latestOedePeriod = oedePeriods.length > 0 ? oedePeriods[oedePeriods.length - 1] : '1° Trim 2026';
+  const oedePeriods = Array.from(new Set(oede.series.map(r => r.periodo))).filter(Boolean);
+  const latestOedePeriod = oedePeriods.length > 0 ? oedePeriods[oedePeriods.length - 1] : '';
 
-  // En OEDE, los puestos de nivel LETRA del último periodo suman el total registrado privado
-  const latestLetterRecords = oede.series.filter(
-    r => r.tipo_nivel === 'LETRA' && r.periodo === latestOedePeriod
-  );
-  const totalOedePuestos = latestLetterRecords.reduce((acc, r) => acc + (r.puestos_trabajo || 0), 0);
+  // En OEDE, el registro oficial de nivel TOTAL define el total provincial
+  const officialOedeTotalRecord = latestOedePeriod
+    ? oede.series.find(r => r.tipo_nivel === 'TOTAL' && r.periodo === latestOedePeriod)
+    : null;
+
+  let totalOedePuestos: number | null = null;
+  let oedeDisponible = false;
+  let oedeMotivoNoDisponible: string | undefined;
+
+  if (officialOedeTotalRecord && officialOedeTotalRecord.puestos_trabajo !== null && officialOedeTotalRecord.estado_dato === 'PUBLICADO') {
+    totalOedePuestos = officialOedeTotalRecord.puestos_trabajo;
+    oedeDisponible = true;
+  } else if (officialOedeTotalRecord && officialOedeTotalRecord.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO') {
+    totalOedePuestos = null;
+    oedeDisponible = false;
+    oedeMotivoNoDisponible = 'El total provincial se encuentra bajo secreto estadístico oficial.';
+  } else {
+    // Si no existe un registro directo de nivel TOTAL, verificar si las letras permiten computar una suma completa
+    const latestLetterRecords = latestOedePeriod
+      ? oede.series.filter(r => r.tipo_nivel === 'LETRA' && r.periodo === latestOedePeriod)
+      : [];
+
+    const hasSecret = latestLetterRecords.some(r => r.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO');
+    const hasMissing = latestLetterRecords.some(r => r.puestos_trabajo === null && r.estado_dato !== 'SIN_DATO_SECRETO_ESTADISTICO');
+
+    if (latestLetterRecords.length > 0 && !hasSecret && !hasMissing) {
+      totalOedePuestos = latestLetterRecords.reduce((acc, r) => acc + (r.puestos_trabajo ?? 0), 0);
+      oedeDisponible = true;
+    } else {
+      totalOedePuestos = null;
+      oedeDisponible = false;
+      oedeMotivoNoDisponible = hasSecret
+        ? 'No es posible determinar el total provincial porque contiene ramas protegidas por secreto estadístico (Ley 17.622).'
+        : 'Datos oficiales insuficientes para computar el total de empleo registrado provincial.';
+    }
+  }
 
   cachedProvincial = {
     pbgTotalConstanteMiles: totalProvincialPbgConstante,
     pbgTotalCorrienteMiles: totalProvincialPbgCorriente,
     pbgUltimoAnio: latestPbgYear,
     pbgEsProvisorio: isPbgProvisorio,
-    oedeTotalPuestosRegistrados: totalOedePuestos > 0 ? totalOedePuestos : 63017,
+    pbgDisponible: isPbgAvailable,
+    pbgMotivoNoDisponible: isPbgAvailable ? undefined : 'No se registran datos oficiales de PBG para el período.',
+    oedeTotalPuestosRegistrados: totalOedePuestos,
     oedeUltimoPeriodo: latestOedePeriod,
+    oedeDisponible,
+    oedeMotivoNoDisponible,
   };
 
   // 3. Estructura MIP global
@@ -148,29 +222,63 @@ function computeData() {
     const areaId = area.area_id;
 
     // PBG para el área
-    const areaPbgRecords = pbg.series.filter(r => r.area_id === areaId && r.periodo_anio === latestPbgYear);
-    const areaValConstante = areaPbgRecords.reduce((acc, r) => acc + (r.valor_constante || 0), 0);
-    const areaValCorriente = areaPbgRecords.reduce((acc, r) => acc + (r.valor_corriente || 0), 0);
-    const pbgPct = totalProvincialPbgConstante > 0 ? (areaValConstante / totalProvincialPbgConstante) * 100 : 0;
+    const areaPbgRecords = latestPbgYear !== null
+      ? pbg.series.filter(r => r.area_id === areaId && r.periodo_anio === latestPbgYear)
+      : [];
+
+    const hasConstante = areaPbgRecords.some(r => r.valor_constante !== null && r.valor_constante !== undefined);
+    const hasCorriente = areaPbgRecords.some(r => r.valor_corriente !== null && r.valor_corriente !== undefined);
+
+    const areaValConstante = hasConstante
+      ? areaPbgRecords.reduce((acc, r) => acc + (r.valor_constante ?? 0), 0)
+      : null;
+    const areaValCorriente = hasCorriente
+      ? areaPbgRecords.reduce((acc, r) => acc + (r.valor_corriente ?? 0), 0)
+      : null;
+
+    const pbgPctConstante = (areaValConstante !== null && totalProvincialPbgConstante !== null && totalProvincialPbgConstante > 0)
+      ? Number(((areaValConstante / totalProvincialPbgConstante) * 100).toFixed(2))
+      : null;
+
+    const pbgPctCorriente = (areaValCorriente !== null && totalProvincialPbgCorriente !== null && totalProvincialPbgCorriente > 0)
+      ? Number(((areaValCorriente / totalProvincialPbgCorriente) * 100).toFixed(2))
+      : null;
+
+    const isAreaPbgAvailable = hasConstante || hasCorriente;
 
     // OEDE para el área
     const isOedeAvailable = areaId !== 'A10';
     let areaPuestos: number | null = null;
     let hasSecret = false;
+    let isComplete = true;
     let oedeReason: string | undefined;
 
-    if (isOedeAvailable) {
+    if (isOedeAvailable && latestOedePeriod) {
       const areaLetters = oede.series.filter(
         r => r.area_id === areaId && r.tipo_nivel === 'LETRA' && r.periodo === latestOedePeriod
       );
 
-      const allNull = areaLetters.length > 0 && areaLetters.every(r => r.puestos_trabajo === null);
-      if (allNull) {
-        areaPuestos = null;
-      } else {
-        areaPuestos = areaLetters.reduce((acc, r) => acc + (r.puestos_trabajo || 0), 0);
-      }
       hasSecret = areaLetters.some(r => r.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO');
+      const allNull = areaLetters.length === 0 || areaLetters.every(r => r.puestos_trabajo === null);
+
+      if (areaLetters.length === 0) {
+        areaPuestos = null;
+        oedeReason = 'No se registran ramas de empleo privado para esta actividad en el período seleccionado.';
+      } else if (allNull) {
+        areaPuestos = null;
+        oedeReason = hasSecret
+          ? 'Dato bajo secreto estadístico oficial (Ley 17.622).'
+          : 'Dato no disponible en la serie oficial.';
+      } else if (hasSecret) {
+        // Suma solo las ramas publicadas conocidas, pero marca que no es completo para evitar engaños
+        const validRamas = areaLetters.filter(r => r.puestos_trabajo !== null);
+        areaPuestos = validRamas.reduce((acc, r) => acc + (r.puestos_trabajo ?? 0), 0);
+        isComplete = false;
+        oedeReason = 'Dato parcial: incluye ramas protegidas por secreto estadístico (Ley 17.622).';
+      } else {
+        areaPuestos = areaLetters.reduce((acc, r) => acc + (r.puestos_trabajo ?? 0), 0);
+        isComplete = true;
+      }
     } else {
       areaPuestos = null; // Rigor: A10 NUNCA es cero
       oedeReason = 'La administración pública (rama L) no se releva en la serie OEDE Jujuy.';
@@ -213,18 +321,22 @@ function computeData() {
       descripcion: area.descripcion,
       icono: area.icono,
       pbg: {
-        disponible: true,
+        disponible: isAreaPbgAvailable,
         ultimoAnio: latestPbgYear,
         esProvisorio: isPbgProvisorio,
         valorConstanteMiles: areaValConstante,
         valorCorrienteMiles: areaValCorriente,
-        porcentajeProvincial: Number(pbgPct.toFixed(2)),
+        porcentajeProvincial: pbgPctConstante,
+        porcentajeProvincialConstante: pbgPctConstante,
+        porcentajeProvincialCorriente: pbgPctCorriente,
+        motivoNoDisponible: isAreaPbgAvailable ? undefined : 'No se registran datos oficiales de PBG para esta actividad.',
       },
       oede: {
-        disponible: isOedeAvailable,
+        disponible: isOedeAvailable && areaPuestos !== null,
         ultimoPeriodo: latestOedePeriod,
         puestosTrabajo: areaPuestos,
         tieneSecretoEstadistico: hasSecret,
+        esCompleto: isComplete,
         motivoNoDisponible: oedeReason,
       },
       eil: {

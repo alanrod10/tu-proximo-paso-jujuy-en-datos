@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import * as path from 'path';
+import * as fs from 'fs';
 
 test.describe('Fase 5: Auditoría Final de Integridad Estadística, Accesibilidad y Rendimiento', () => {
   test('Audit 1: Zero runtime console errors or page errors across all application routes', async ({ page }) => {
@@ -110,51 +111,58 @@ test.describe('Fase 5: Auditoría Final de Integridad Estadística, Accesibilida
     await expect(page.getByText(/No deben interpretarse como cantidad actual de puestos de trabajo/i)).toBeVisible();
   });
 
-  test('Audit 4: Generate complete visual snapshot gallery for final project closure report', async ({ page }) => {
-    const artifactDir = '/home/alanrod10/.gemini/antigravity-cli/brain/cc802746-dfc9-4808-9b48-64cac8121cc9';
+  test('Audit 4: Generate complete visual snapshot gallery for final project closure report', async ({ page }, testInfo) => {
+    const saveSnapshot = async (filename: string) => {
+      const targetPath = process.env.SCREENSHOT_DIR
+        ? path.join(process.env.SCREENSHOT_DIR, filename)
+        : testInfo.outputPath(filename);
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      await page.screenshot({ path: targetPath, fullPage: false });
+      await testInfo.attach(filename, { path: targetPath, contentType: 'image/png' });
+    };
 
     // 1. Desktop: Portada / Home
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/#inicio');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase5-home-desktop.png'), fullPage: false });
+    await saveSnapshot('fase5-home-desktop.png');
 
     // 2. Desktop: Explorador de Áreas
     await page.goto('/#areas');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase5-areas-desktop.png'), fullPage: false });
+    await saveSnapshot('fase5-areas-desktop.png');
 
     // 3. Desktop: Modo Comparador (A01 Agro vs A03 Industria)
     await page.goto('/#comparador');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase5-comparador-desktop.png'), fullPage: false });
+    await saveSnapshot('fase5-comparador-desktop.png');
 
     // 4. Desktop: Dinámica Laboral EIL Transversal
     await page.goto('/#transversal');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase5-eil-desktop.png'), fullPage: false });
+    await saveSnapshot('fase5-eil-desktop.png');
 
     // 5. Desktop: Ficha de Área A01 Agro (con gráficos y KPIs)
     await page.goto('/#detalle/A01');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase5-detail-a01-desktop.png'), fullPage: false });
+    await saveSnapshot('fase5-detail-a01-desktop.png');
 
     // 6. Desktop: Ficha de Área A10 Administración Pública (tratamiento de no disponibilidad OEDE)
     await page.goto('/#detalle/A10');
     await page.waitForLoadState('networkidle');
     const oedeTab = page.getByRole('button', { name: /👥 Empleo Registrado \(OEDE\)/i });
     await oedeTab.click();
-    await page.screenshot({ path: path.join(artifactDir, 'fase5-detail-a10-desktop.png'), fullPage: false });
+    await saveSnapshot('fase5-detail-a10-desktop.png');
 
     // 7. Mobile: Portada
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/#inicio');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase5-home-mobile.png'), fullPage: false });
+    await saveSnapshot('fase5-home-mobile.png');
 
     // 8. Mobile: Modo Comparador
     await page.goto('/#comparador');
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: path.join(artifactDir, 'fase5-comparador-mobile.png'), fullPage: false });
+    await saveSnapshot('fase5-comparador-mobile.png');
   });
 });
