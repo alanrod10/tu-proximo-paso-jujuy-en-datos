@@ -14,14 +14,16 @@ import defaultEil from '../../data/eil.json';
 import defaultMip from '../../data/mip_empleo.json';
 
 /**
- * Catálogo canónico oficial de ramas a nivel de LETRA en OEDE Jujuy (SIPA).
- * Fuente oficial: Observatorio de Empleo y Dinámica Empresarial (OEDE), MTEySS en base a SIPA.
- * Archivo original: OEDE/provinciales_serie_empleo_trimestral_2dig_7.xlsx, hoja "Jujuy".
+ * Catálogo operativo de las 14 letras observadas en el extracto provincial utilizado por el proyecto.
+ *
+ * Fuente declarada en metadatos:
+ * Observatorio de Empleo y Dinámica Empresarial (OEDE), MTEySS en base a SIPA.
+ * Archivo declarado: OEDE/provinciales_serie_empleo_trimestral_2dig_7.xlsx, hoja "Jujuy".
  * Indicador: Asalariados registrados del sector privado (puestos de trabajo declarados ante AFIP F. 931).
  *
- * Corresponde a las 14 letras del clasificador de actividad económica (ClaNAE 2004) presentes en la serie provincial:
+ * Códigos de letra observados en este extracto provincial de Jujuy:
  * A: Agricultura, ganadería, caza y silvicultura
- * B: Pesca y servicios conexos (en Jujuy bajo secreto estadístico oficial 's.d.' en todos los trimestres)
+ * B: Pesca y servicios conexos (en este extracto provincial figura bajo secreto estadístico 's.d.' en todos los trimestres)
  * C: Explotación de minas y canteras
  * D: Industria manufacturera
  * E: Electricidad, gas y agua
@@ -35,27 +37,29 @@ import defaultMip from '../../data/mip_empleo.json';
  * N: Servicios sociales y de salud
  * O: Servicios comunitarios, sociales y personales n.c.p.
  *
- * Justificación oficial de la ausencia de las restantes letras de ClaNAE 2004:
- * 1. Rama L (Administración pública, defensa y seguridad social obligatoria): NO forma parte del empleo
- *    privado asalariado relevado en SIPA provincial. Los trabajadores estatales se rigen por regímenes
- *    específicos públicos (regla explícita en data/metadata.json).
- * 2. Rama P (Hogares privados con servicio doméstico): Excluida del panel empresarial de OEDE porque los
- *    trabajadores de casas particulares se rigen por el Régimen Especial de la Ley 26.844 y no integran
- *    las declaraciones juradas de empresas comerciales (F. 931).
- * 3. Rama Q (Organizaciones y órganos extraterritoriales): En la planilla provincial oficial de Jujuy no
- *    existen registros debido a la inexistencia de sedes diplomáticas o representaciones extraterritoriales
- *    empleadoras declaradas en la jurisdicción provincial de Jujuy.
- * 4. Rama Z (Actividades no especificadas / no clasificadas): La serie provincial OEDE de Jujuy no publica
- *    una categoría residual Z a nivel de letra; las declaraciones se asignan a ramas con código o se consolidan
- *    en el total oficial publicado.
+ * Alcance metodológico y relación con el ClaNAE 2004:
+ * - Esta lista representa los códigos de letra observados en el extracto provincial de OEDE Jujuy (hoja "Jujuy")
+ *   del archivo declarado en los metadatos del proyecto, y no representa necesariamente la totalidad del
+ *   universo del ClaNAE 2004.
+ * - La metodología general de INDEC para registros laborales SIPA bajo ClaNAE 2004 contempla también las
+ *   categorías Q (organizaciones y órganos extraterritoriales) y Z (no clasificados).
+ *   Referencia metodológica general:
+ *   https://www.indec.gob.ar/ftp/cuadros/economia/metodologia_18_erl_2016.pdf
+ * - Que las categorías Q o Z no aparezcan en el archivo consultado no demuestra que las actividades
+ *   correspondientes no existan en Jujuy.
+ * - La rama L (Administración pública, defensa y seguridad social obligatoria) no se publica en esta serie
+ *   provincial según los metadatos del proyecto y bajo ninguna circunstancia debe imputarse como cero.
+ * - La Ley 26.844 establece un régimen específico para el personal de casas particulares, pero eso, por sí solo,
+ *   no demuestra la causa exacta de la ausencia de la letra P en este extracto OEDE.
  *
  * Principio conservador de integridad estadística:
- * - Nunca se debe asumir que una categoría ausente o bajo secreto equivale a cero.
- * - La suma agregada alternativa a nivel de letras se acepta ÚNICAMENTE cuando el conjunto de códigos coincide
- *   de manera biunívoca con este catálogo canónico autorizado: exactamente 14 categorías, sin omitir ninguna,
- *   sin duplicados y sin categorías inesperadas o no autorizadas (como Q, Z, etc.).
- * - Si falta alguna letra esperada, si se incluye una categoría desconocida, o si alguna letra posee secreto
- *   estadístico o valores no publicados, se preserva el comportamiento conservador: total no disponible (null).
+ * - Nunca se debe tratar valores ausentes ni protegidos por secreto estadístico como cero.
+ * - La suma alternativa a nivel de letras se acepta ÚNICAMENTE bajo las validaciones exactas ya implementadas:
+ *   debe coincidir exactamente con el catálogo operativo observado de 14 letras, sin omisiones, sin duplicados,
+ *   sin categorías no reconocidas, y con valores numéricos finitos publicados.
+ * - Si no se puede garantizar la integridad requerida (por ejemplo, si falta alguna letra, si aparece una categoría
+ *   inesperada, o si alguna letra se encuentra bajo secreto estadístico como ocurre con la letra B en Jujuy),
+ *   se preserva el comportamiento conservador: se devuelve null y el indicador se marca como no disponible.
  */
 export const EXPECTED_OEDE_LETTERS: readonly string[] = [
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'
