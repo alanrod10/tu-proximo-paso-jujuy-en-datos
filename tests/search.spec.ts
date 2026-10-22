@@ -50,6 +50,26 @@ test.describe('Search functionality', () => {
     await expect(page.locator('text=Volver al Explorador de Áreas').first()).toBeVisible();
   });
 
+  test('search handles NO_APLICA correspondences correctly', async ({ page }) => {
+    const searchInput = page.getByPlaceholder('Buscar por área o actividad...');
+
+    // Search "Actividades primarias" (NO_APLICA for A01/A02 in EIL)
+    await searchInput.fill('Actividades primarias');
+    await expect(page.locator("div[role='button']:has-text('Agro y producción primaria')")).toBeVisible();
+    await expect(page.locator("div[role='button']:has-text('Minería')")).toBeVisible();
+
+    // Should NOT say it coincides officially
+    await expect(page.locator('text=Coincide con clasificación oficial')).toHaveCount(0);
+    // Should say it is not applicable
+    await expect(page.locator('text=Fuente no aplicable a esta área').first()).toBeVisible();
+
+    // Search "Sector público" (NO_APLICA for A10 in EIL)
+    await searchInput.fill('');
+    await searchInput.fill('Sector público');
+    await expect(page.locator("div[role='button']:has-text('Administración pública')")).toBeVisible();
+    await expect(page.locator('text=Fuente no aplicable a esta área').first()).toBeVisible();
+  });
+
   test('search explicitly handles ambiguous alias accurately', async ({ page }) => {
     const searchInput = page.getByPlaceholder('Buscar por área o actividad...');
 

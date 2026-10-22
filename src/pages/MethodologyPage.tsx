@@ -93,7 +93,7 @@ export const MethodologyPage: React.FC<MethodologyPageProps> = ({
                   )}
                   <div>
                     <span className="font-semibold text-slate-700">Unidad de medida: </span>
-                    <span>{f.unidades.join(' • ')}</span>
+                    <span>{f.unidades && f.unidades.length > 0 ? f.unidades.join(' • ') : 'Varía según el indicador y la tabla; consultar la ficha de la fuente'}</span>
                   </div>
                 </div>
               </div>
