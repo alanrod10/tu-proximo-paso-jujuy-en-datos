@@ -158,7 +158,7 @@ export const MethodologyPage: React.FC<MethodologyPageProps> = ({
               Matriz Completa de Correspondencias (78 Registros)
             </h2>
             <p className="text-xs text-slate-500">
-              Mapeo unívoco entre las ramas de cada fuente oficial y las {areas.length} áreas conceptuales del proyecto:
+              Matriz de correspondencias entre las ramas de las fuentes oficiales y las áreas conceptuales del proyecto, con identificación explícita de relaciones directas, múltiples, agrupadas, parciales y no aplicables:
             </p>
           </div>
         </div>
