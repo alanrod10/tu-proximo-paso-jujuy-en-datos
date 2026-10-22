@@ -59,6 +59,7 @@ const QUICK_SEARCH_CHIPS: Array<{ label: string; areaId: AreaId }> = [
 
 export const HomePage: React.FC<HomePageProps> = ({
   areas,
+  onStartWizard,
   onExploreAreas,
   onSelectArea,
   onNavigateMethodology,
@@ -104,13 +105,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             {/* Chips de sugerencias directas */}
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs">
-              <span className="text-slate-400 text-[11px] font-medium mr-1">Sugerencias rápidas:</span>
+              <span className="text-slate-400 text-xs font-medium mr-1">Sugerencias rápidas:</span>
               {QUICK_SEARCH_CHIPS.map((chip) => (
                 <button
                   key={chip.label}
                   type="button"
                   onClick={() => onSelectArea(chip.areaId)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 text-[11px] transition-all cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 text-xs transition-all cursor-pointer"
                 >
                   {chip.label}
                 </button>
@@ -118,10 +119,43 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           </div>
 
+          {/* TARJETA DESTACADA: MINI ENCUESTA / ASISTENTE */}
+          {onStartWizard && (
+            <div className="max-w-2xl mx-auto rounded-2xl bg-gradient-to-r from-brand-900/60 via-slate-800/80 to-slate-800/90 border border-brand-400/40 p-5 sm:p-6 text-left shadow-lg backdrop-blur-sm space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1.5 flex-1">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Orientación guiada</span>
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                    ¿No sabés por dónde empezar?
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                    Respondé unas preguntas breves sobre tus intereses y te mostraremos áreas económicas de Jujuy para explorar.
+                  </p>
+                  <p className="text-xs text-slate-400 leading-relaxed pt-0.5">
+                    Son 3 preguntas principales y una pregunta opcional sobre la edad. No es un test vocacional ni determina qué tenés que estudiar o en qué tenés que trabajar.
+                  </p>
+                </div>
+                <div className="sm:self-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={onStartWizard}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                  >
+                    <span>Hacer mini encuesta</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 3 KPIS CLAVE CONSOLIDADOS DE JUJUY */}
           <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-left">
             {/* KPI 1: Producción */}
-            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
                 <TrendingUp className="w-4 h-4" />
                 <span>Producción Provincial (PBG {provincial.pbgUltimoAnio || 2024}{provincial.pbgEsProvisorio ? '*' : ''})</span>
@@ -131,15 +165,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                   ? `$${(provincial.pbgTotalConstanteMiles / 1000000).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mil millones`
                   : 'No disponible'}
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 {provincial.pbgTotalConstanteMiles !== null && provincial.pbgTotalCorrienteMiles !== null
-                  ? `A precios constantes de 2004 ($${(provincial.pbgTotalCorrienteMiles / 1000000000).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} billones corrientes).`
+                  ? `Mide el valor de los bienes y servicios producidos en Jujuy (2024 es provisorio*). Expresado a precios constantes de 2004 para medir cantidades reales sin inflación ($${(provincial.pbgTotalCorrienteMiles / 1000000000).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} billones corrientes a valores de cada momento).`
                   : (provincial.pbgMotivoNoDisponible || 'Valores de PBG provincial no disponibles.')}
               </p>
             </div>
 
             {/* KPI 2: Empleo Privado Formal */}
-            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
               <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
                 <Users className="w-4 h-4" />
                 <span>Trabajo Registrado (OEDE)</span>
@@ -149,15 +183,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                   ? `${provincial.oedeTotalPuestosRegistrados.toLocaleString('es-AR')} puestos`
                   : 'No disponible'}
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 {provincial.oedeDisponible
-                  ? `Asalariados formales del sector privado (${provincial.oedeUltimoPeriodo}).`
+                  ? `Cuenta puestos de trabajo asalariados registrados en el sector privado (${provincial.oedeUltimoPeriodo}). No incluye empleo público ni informalidad.`
                   : (provincial.oedeMotivoNoDisponible || 'Dato oficial de empleo privado no disponible.')}
               </p>
             </div>
 
             {/* KPI 3: Sectores Auditados */}
-            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
               <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
                 <Layers className="w-4 h-4" />
                 <span>12 Actividades Auditadas</span>
@@ -165,8 +199,8 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="text-xl sm:text-2xl font-black text-white">
                 4 Fuentes Oficiales
               </div>
-              <p className="text-[11px] text-slate-400">
-                Trazabilidad DiPEC, SIPA/OEDE, EIL y MIP 2015.
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Permite explorar 12 áreas económicas integrando 4 fuentes públicas oficiales: DiPEC, SIPA/OEDE, EIL y MIP 2015.
               </p>
             </div>
           </div>
@@ -174,7 +208,52 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* ======================================================================= */}
-      {/* 2. LAS 12 ÁREAS ECONÓMICAS — PROTAGONISMO CENTRAL                       */}
+      {/* 2. CÓMO LEER ESTOS DATOS — GUÍA METODOLÓGICA BREVE                      */}
+      {/* ======================================================================= */}
+      <section className="bg-slate-50 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-brand-600" />
+          <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+            Cómo leer estos datos
+          </h2>
+        </div>
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          Esta plataforma reúne información estadística pública de la provincia de Jujuy. Cada fuente mide una dimensión diferente de la economía local:
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1.5 shadow-2xs">
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">PBG (DiPEC)</span>
+            <p className="text-xs font-bold text-slate-800">Producción provincial</p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Estima el valor monetario de todos los bienes y servicios generados por cada actividad económica en Jujuy.
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1.5 shadow-2xs">
+            <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">OEDE / SIPA</span>
+            <p className="text-xs font-bold text-slate-800">Empleo formal privado</p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Registra los puestos de trabajo asalariados declarados por empresas privadas. No contabiliza empleo público ni actividad informal.
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1.5 shadow-2xs">
+            <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">EIL (MTEySS)</span>
+            <p className="text-xs font-bold text-slate-800">Búsquedas y contrataciones</p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Muestra las demandas y calificaciones buscadas por empresas privadas de 5 o más personas trabajadoras en el aglomerado Gran Jujuy.
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1.5 shadow-2xs">
+            <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">MIP Jujuy</span>
+            <p className="text-xs font-bold text-slate-800">Relaciones entre sectores</p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Describe compras y ventas entre sectores económicos. Advertencia: tiene base 2015 y describe la estructura productiva observada en ese año de referencia.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ======================================================================= */}
+      {/* 3. LAS 12 ÁREAS ECONÓMICAS — PROTAGONISMO CENTRAL                       */}
       {/* ======================================================================= */}
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 px-1">
@@ -209,7 +288,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             const puestosLabel = overview?.oede.disponible && overview.oede.puestosTrabajo !== null
               ? `${overview.oede.puestosTrabajo.toLocaleString('es-AR')} puestos`
-              : 'No relevado en SIPA';
+              : 'Dato no disponible en esta fuente';
 
             const pbgShareLabel = (overview?.pbg.porcentajeProvincial !== null && overview?.pbg.porcentajeProvincial !== undefined)
               ? `${overview.pbg.porcentajeProvincial}% del PBG`
@@ -250,9 +329,11 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                 <div className="pt-3 border-t border-slate-100 space-y-2">
                   <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-slate-600">{puestosLabel}</span>
+                    <span className={overview?.oede.disponible && overview.oede.puestosTrabajo !== null ? 'text-slate-600' : 'text-slate-500 italic'}>
+                      {puestosLabel}
+                    </span>
                     {pbgShareLabel && (
-                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[10px]">
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs font-bold" title="Participación en la producción provincial (PBG)">
                         {pbgShareLabel}
                       </span>
                     )}
