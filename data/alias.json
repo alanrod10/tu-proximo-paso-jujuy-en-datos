@@ -1,0 +1,38 @@
+[
+  {
+    "area_id": "A01",
+    "alias": ["campo", "cosecha", "finca", "tractor"]
+  },
+  {
+    "area_id": "A05",
+    "alias": ["albañil", "arquitecto", "obra", "ingeniero civil", "constructor"]
+  },
+  {
+    "area_id": "A06",
+    "alias": ["vendedor", "supermercado", "kiosco", "negocio", "ferreteria", "tienda", "comerciante", "cajero de comercio"]
+  },
+  {
+    "area_id": "A07",
+    "alias": ["hotel", "restaurante", "mozo", "chef", "cocinero", "guia turistico"]
+  },
+  {
+    "area_id": "A08",
+    "alias": ["colectivo", "camionero", "chofer", "remis", "logistica", "telecomunicaciones"]
+  },
+  {
+    "area_id": "A09",
+    "alias": ["abogado", "contador", "banco", "cajero bancario", "seguros", "inmobiliaria"]
+  },
+  {
+    "area_id": "A10",
+    "alias": ["policia", "municipalidad", "gobierno", "estado", "empleado publico"]
+  },
+  {
+    "area_id": "A11",
+    "alias": ["profesor", "maestro", "escuela", "colegio", "docente", "universidad"]
+  },
+  {
+    "area_id": "A12",
+    "alias": ["medico", "enfermero", "hospital", "clinica", "psicologo", "odontologo", "salud mental", "farmacia"]
+  }
+]

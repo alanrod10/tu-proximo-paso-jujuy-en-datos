@@ -3,21 +3,79 @@ import { Area, AreaId } from '../types';
 import { AreaCard } from '../components/AreaCard';
 import { Search, Info, HelpCircle, X } from 'lucide-react';
 
+import defaultCorrespondencias from '../../data/correspondencias.json';
+
+import defaultAlias from '../../data/alias.json';
+
+import { Correspondencia } from '../types';
+
+
+const normalizeString = (str: string) => {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+};
+
+
 interface AreasExplorerPageProps {
   areas: Area[];
   onSelectArea: (areaId: AreaId) => void;
 }
 
+interface AreaWithMatch extends Area {
+  matchReason?: string;
+}
+
 export const AreasExplorerPage: React.FC<AreasExplorerPageProps> = ({ areas, onSelectArea }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filtrado simple por texto sin alterar el orden A01 -> A12
-  const filteredAreas = areas.filter(
-    (area) =>
-      area.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      area.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      area.area_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Helper para normalizar
+  const normalizedSearch = normalizeString(searchTerm.trim());
+  const correspondencias = defaultCorrespondencias as Correspondencia[];
+  const aliasData = defaultAlias as { area_id: string; alias: string[] }[];
+
+  const filteredAreas = areas.reduce<AreaWithMatch[]>((acc, area) => {
+    if (!normalizedSearch) {
+      acc.push(area);
+      return acc;
+    }
+
+    // 1. Check basic area fields
+    const matchArea =
+      normalizeString(area.nombre).includes(normalizedSearch) ||
+      normalizeString(area.descripcion).includes(normalizedSearch) ||
+      normalizeString(area.area_id).includes(normalizedSearch);
+
+    if (matchArea) {
+      acc.push(area);
+      return acc;
+    }
+
+    // 2. Check correspondencias
+    const areaCorrs = correspondencias.filter(c => c.area_id === area.area_id);
+    const matchedCorr = areaCorrs.find(c =>
+      normalizeString(c.nombre_fuente).includes(normalizedSearch)
+    );
+
+    if (matchedCorr) {
+      const isConfirmed = matchedCorr.estado === 'CONFIRMADO';
+      const reasonPrefix = isConfirmed ? 'Coincide con clasificación oficial' : 'Coincidencia parcial/observada';
+      acc.push({ ...area, matchReason: `${reasonPrefix}: "${matchedCorr.nombre_fuente}"` });
+      return acc;
+    }
+
+    // 3. Check alias explícitos
+    const areaAlias = aliasData.find(a => a.area_id === area.area_id);
+    if (areaAlias) {
+      const matchedAlias = areaAlias.alias.find(al =>
+        normalizeString(al).includes(normalizedSearch)
+      );
+      if (matchedAlias) {
+         acc.push({ ...area, matchReason: `Término orientativo relacionado: "${matchedAlias}"` });
+         return acc;
+      }
+    }
+
+    return acc;
+  }, []);
 
   return (
     <div className="space-y-8 py-6">
@@ -79,7 +137,14 @@ export const AreasExplorerPage: React.FC<AreasExplorerPageProps> = ({ areas, onS
       {filteredAreas.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAreas.map((area) => (
-            <AreaCard key={area.area_id} area={area} onSelect={onSelectArea} />
+            <div key={area.area_id} className="relative">
+              <AreaCard area={area} onSelect={onSelectArea} />
+              {area.matchReason && (
+                 <div className="absolute -top-3 left-4 bg-brand-100 text-brand-800 text-[10px] font-bold px-2 py-1 rounded-full shadow-sm border border-brand-200 z-10">
+                    {area.matchReason}
+                 </div>
+              )}
+            </div>
           ))}
         </div>
       ) : (
