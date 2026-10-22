@@ -9,7 +9,7 @@
   },
   {
     "area_id": "A06",
-    "alias": ["vendedor", "supermercado", "kiosco", "negocio", "ferreteria", "tienda", "comerciante"]
+    "alias": ["vendedor", "supermercado", "kiosco", "negocio", "ferreteria", "tienda", "comerciante", "cajero de comercio"]
   },
   {
     "area_id": "A07",
@@ -21,7 +21,7 @@
   },
   {
     "area_id": "A09",
-    "alias": ["abogado", "contador", "banco", "cajero", "seguros", "inmobiliaria"]
+    "alias": ["abogado", "contador", "banco", "cajero bancario", "seguros", "inmobiliaria"]
   },
   {
     "area_id": "A10",
