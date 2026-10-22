@@ -15,10 +15,13 @@ import defaultMip from '../../data/mip_empleo.json';
 
 /**
  * Catálogo canónico oficial de ramas a nivel de LETRA en OEDE Jujuy (SIPA).
- * Fuente: Secretaría de Trabajo, Empleo y Seguridad Social (STySS) - OEDE.
- * Corresponde a las 14 letras del clasificador de actividad económica presentes en la serie provincial:
+ * Fuente oficial: Observatorio de Empleo y Dinámica Empresarial (OEDE), MTEySS en base a SIPA.
+ * Archivo original: OEDE/provinciales_serie_empleo_trimestral_2dig_7.xlsx, hoja "Jujuy".
+ * Indicador: Asalariados registrados del sector privado (puestos de trabajo declarados ante AFIP F. 931).
+ *
+ * Corresponde a las 14 letras del clasificador de actividad económica (ClaNAE 2004) presentes en la serie provincial:
  * A: Agricultura, ganadería, caza y silvicultura
- * B: Pesca y servicios conexos
+ * B: Pesca y servicios conexos (en Jujuy bajo secreto estadístico oficial 's.d.' en todos los trimestres)
  * C: Explotación de minas y canteras
  * D: Industria manufacturera
  * E: Electricidad, gas y agua
@@ -32,14 +35,27 @@ import defaultMip from '../../data/mip_empleo.json';
  * N: Servicios sociales y de salud
  * O: Servicios comunitarios, sociales y personales n.c.p.
  *
- * Reglas de integridad estadística:
- * 1. La rama L (Administración pública, defensa y seguridad social obligatoria) NO forma parte del empleo
- *    privado relevado en SIPA provincial.
- * 2. Las ramas P (Hogares privados con servicio doméstico) y Q (Organizaciones extraterritoriales) no registran
- *    empresas privadas declaradas en la serie de Jujuy.
- * 3. Para que una suma agregada alternativa a nivel de letras sea demostrablemente completa, deben estar
- *    presentes exactamente las 14 letras esperadas, sin duplicados, sin categorías omitidas y cada una con
- *    un valor numérico finito y estado_dato 'PUBLICADO'.
+ * Justificación oficial de la ausencia de las restantes letras de ClaNAE 2004:
+ * 1. Rama L (Administración pública, defensa y seguridad social obligatoria): NO forma parte del empleo
+ *    privado asalariado relevado en SIPA provincial. Los trabajadores estatales se rigen por regímenes
+ *    específicos públicos (regla explícita en data/metadata.json).
+ * 2. Rama P (Hogares privados con servicio doméstico): Excluida del panel empresarial de OEDE porque los
+ *    trabajadores de casas particulares se rigen por el Régimen Especial de la Ley 26.844 y no integran
+ *    las declaraciones juradas de empresas comerciales (F. 931).
+ * 3. Rama Q (Organizaciones y órganos extraterritoriales): En la planilla provincial oficial de Jujuy no
+ *    existen registros debido a la inexistencia de sedes diplomáticas o representaciones extraterritoriales
+ *    empleadoras declaradas en la jurisdicción provincial de Jujuy.
+ * 4. Rama Z (Actividades no especificadas / no clasificadas): La serie provincial OEDE de Jujuy no publica
+ *    una categoría residual Z a nivel de letra; las declaraciones se asignan a ramas con código o se consolidan
+ *    en el total oficial publicado.
+ *
+ * Principio conservador de integridad estadística:
+ * - Nunca se debe asumir que una categoría ausente o bajo secreto equivale a cero.
+ * - La suma agregada alternativa a nivel de letras se acepta ÚNICAMENTE cuando el conjunto de códigos coincide
+ *   de manera biunívoca con este catálogo canónico autorizado: exactamente 14 categorías, sin omitir ninguna,
+ *   sin duplicados y sin categorías inesperadas o no autorizadas (como Q, Z, etc.).
+ * - Si falta alguna letra esperada, si se incluye una categoría desconocida, o si alguna letra posee secreto
+ *   estadístico o valores no publicados, se preserva el comportamiento conservador: total no disponible (null).
  */
 export const EXPECTED_OEDE_LETTERS: readonly string[] = [
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'
@@ -207,13 +223,16 @@ function computeData() {
       oedeDisponible = false;
       oedeMotivoNoDisponible = 'No se registran datos oficiales de empleo formal para el período.';
     } else {
-      // Regla A: Verificar registros duplicados
+      // Regla A: Verificar conteo exacto y ausencia de duplicados
       const letterCodes = latestLetterRecords.map(r => r.codigo_rama);
       const uniqueCodes = new Set(letterCodes);
       const hasDuplicates = letterCodes.length !== uniqueCodes.size;
 
-      // Regla B: Demostrar presencia de todas las categorías esperadas del nomenclador provincial
+      // Regla B: Verificar correspondencia biunívoca exacta con el catálogo canónico autorizado EXPECTED_OEDE_LETTERS
+      const authorizedSet = new Set<string>(EXPECTED_OEDE_LETTERS);
       const missingExpected = EXPECTED_OEDE_LETTERS.filter(code => !uniqueCodes.has(code));
+      const unexpectedCodes = Array.from(uniqueCodes).filter(code => !authorizedSet.has(code));
+      const hasExactCount = latestLetterRecords.length === EXPECTED_OEDE_LETTERS.length;
 
       // Regla C: Cada registro debe tener valor numérico finito y estado_dato 'PUBLICADO'
       const hasSecret = latestLetterRecords.some(r => r.estado_dato === 'SIN_DATO_SECRETO_ESTADISTICO');
@@ -230,7 +249,11 @@ function computeData() {
         totalOedePuestos = null;
         oedeDisponible = false;
         oedeMotivoNoDisponible = 'Inconsistencia en el dataset OEDE: existen registros duplicados a nivel de letra.';
-      } else if (missingExpected.length > 0) {
+      } else if (unexpectedCodes.length > 0) {
+        totalOedePuestos = null;
+        oedeDisponible = false;
+        oedeMotivoNoDisponible = `Inconsistencia en el dataset OEDE: se identificaron categorías no autorizadas o inesperadas (${unexpectedCodes.join(', ')}). No es posible validar la cobertura oficial.`;
+      } else if (missingExpected.length > 0 || !hasExactCount) {
         totalOedePuestos = null;
         oedeDisponible = false;
         oedeMotivoNoDisponible = `Cobertura incompleta del universo sectorial OEDE: faltan ramas oficiales esperadas (${missingExpected.join(', ')}).`;
@@ -243,7 +266,7 @@ function computeData() {
         oedeDisponible = false;
         oedeMotivoNoDisponible = 'No es posible determinar el total provincial: existen ramas con valores no publicados, no numéricos o nulos.';
       } else {
-        // Cobertura demostrada completa, sin duplicados y todos publicados con valores válidos
+        // Cobertura demostrada completa, exacta (14 de 14), sin duplicados, sin categorías inesperadas y todas con valores válidos publicados
         totalOedePuestos = latestLetterRecords.reduce((acc, r) => acc + (r.puestos_trabajo as number), 0);
         oedeDisponible = true;
       }

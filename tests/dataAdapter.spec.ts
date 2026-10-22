@@ -565,4 +565,54 @@ test.describe('Statistical Integrity Validation (dataAdapter)', () => {
     expect(result?.oede.motivoNoDisponible).toContain('Dato parcial');
     expect(result?.oede.motivoNoDisponible).toContain('No equivale al total del área');
   });
+
+  test('OEDE Integrity 8: Unexpected category outside authorized catalog prevents alternative sum and returns null', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const adapter = (window as any).__DATA_ADAPTER__;
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O'];
+      const series = letters.map((code, index) => ({
+        id: `OEDE_${code}`,
+        area_id: 'A01',
+        codigo_rama: code,
+        nombre_rama: `Rama ${code}`,
+        tipo_nivel: 'LETRA',
+        letra_padre: null,
+        periodo: '1° Trim 2026',
+        anio: 2026,
+        trimestre: 1,
+        puestos_trabajo: (index + 1) * 1000,
+        estado_dato: 'PUBLICADO',
+        unidad: 'Puestos'
+      }));
+      // Agregar una categoría extra inesperada / no autorizada (ej. 'Z' o 'Q')
+      series.push({
+        id: 'OEDE_EXTRA_Z',
+        area_id: 'A01',
+        codigo_rama: 'Z',
+        nombre_rama: 'Rama no autorizada',
+        tipo_nivel: 'LETRA',
+        letra_padre: null,
+        periodo: '1° Trim 2026',
+        anio: 2026,
+        trimestre: 1,
+        puestos_trabajo: 500,
+        estado_dato: 'PUBLICADO',
+        unidad: 'Puestos'
+      });
+
+      adapter.setAdapterOverrides({
+        oede: {
+          metadata: { fuente: 'OEDE', descripcion: 'OEDE Test' },
+          series
+        }
+      });
+      return adapter.getProvincialOverview();
+    });
+
+    // Con una categoría extra no autorizada, no se debe sumar ni descartar silenciosamente: debe ser null
+    expect(result.oedeTotalPuestosRegistrados).toBeNull();
+    expect(result.oedeDisponible).toBe(false);
+    expect(result.oedeMotivoNoDisponible).toContain('categorías no autorizadas o inesperadas');
+    expect(result.oedeMotivoNoDisponible).toContain('Z');
+  });
 });
