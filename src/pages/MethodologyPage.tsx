@@ -93,7 +93,7 @@ export const MethodologyPage: React.FC<MethodologyPageProps> = ({
                   )}
                   <div>
                     <span className="font-semibold text-slate-700">Unidad de medida: </span>
-                    <span>{f.unidades.join(' • ')}</span>
+                    <span>{f.unidades && f.unidades.length > 0 ? f.unidades.join(' • ') : 'Varía según el indicador y la tabla; consultar la ficha de la fuente'}</span>
                   </div>
                 </div>
               </div>
@@ -158,7 +158,7 @@ export const MethodologyPage: React.FC<MethodologyPageProps> = ({
               Matriz Completa de Correspondencias (78 Registros)
             </h2>
             <p className="text-xs text-slate-500">
-              Mapeo unívoco entre las ramas de cada fuente oficial y las {areas.length} áreas conceptuales del proyecto:
+              Matriz de correspondencias entre las ramas de las fuentes oficiales y las {areas.length} áreas conceptuales del proyecto, con identificación explícita de relaciones directas, múltiples, agrupadas, parciales y no aplicables:
             </p>
           </div>
         </div>

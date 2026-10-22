@@ -56,8 +56,16 @@ export const AreasExplorerPage: React.FC<AreasExplorerPageProps> = ({ areas, onS
     );
 
     if (matchedCorr) {
-      const isConfirmed = matchedCorr.estado === 'CONFIRMADO';
-      const reasonPrefix = isConfirmed ? 'Coincide con clasificación oficial' : 'Coincidencia parcial/observada';
+      let reasonPrefix = '';
+      if (matchedCorr.tipo_correspondencia === 'NO_APLICA') {
+        reasonPrefix = 'Fuente no aplicable a esta área';
+      } else if (matchedCorr.tipo_correspondencia === 'AGRUPADA') {
+        reasonPrefix = 'Coincidencia por agrupación oficial';
+      } else if (matchedCorr.tipo_correspondencia === 'PARCIAL' || matchedCorr.estado === 'OBSERVADO') {
+        reasonPrefix = 'Coincidencia parcial/observada';
+      } else {
+        reasonPrefix = 'Coincide con clasificación oficial';
+      }
       acc.push({ ...area, matchReason: `${reasonPrefix}: "${matchedCorr.nombre_fuente}"` });
       return acc;
     }

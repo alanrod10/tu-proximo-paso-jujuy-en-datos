@@ -224,14 +224,14 @@ export interface MIPDataset {
 export interface MetadataFuente {
   fuente_id: string;
   organismo: string;
-  archivo_original: string;
+  archivo_original?: string;
   hoja?: string;
   archivos_originales?: string[];
   indicador: string;
   cobertura?: string;
   universo?: string;
   periodicidad: string;
-  unidades: string[];
+  unidades?: string[];
   condicion_especial: string;
 }
 
