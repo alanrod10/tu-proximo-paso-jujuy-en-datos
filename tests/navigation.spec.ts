@@ -100,4 +100,36 @@ test.describe('Navigation and Browser History functionality', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await saveSnapshot('fase1-mobile.png');
   });
+
+  test('home page: provides visible access to mini-survey, coexists with global search, and navigates to wizard', async ({ page }) => {
+    await page.goto('/');
+
+    // 1. Coexistencia del buscador global y el acceso a la mini encuesta en la portada
+    const searchInput = page.locator('input[aria-label="Buscar actividades, oficios o productos en Jujuy"]').first();
+    await expect(searchInput).toBeVisible();
+
+    const surveyTitle = page.locator('text=¿No sabés por dónde empezar?').first();
+    await expect(surveyTitle).toBeVisible();
+
+    // 2. Presencia del botón para iniciar la mini encuesta desde la portada
+    const surveyButton = page.getByRole('button', { name: 'Hacer mini encuesta' });
+    await expect(surveyButton).toBeVisible();
+
+    // 3. Explicación comprensible de PBG y OEDE en la portada
+    await expect(page.locator('text=Producción Provincial (PBG 2024*)').first()).toBeVisible();
+    await expect(page.getByText(/bienes y servicios producidos en Jujuy/i).first()).toBeVisible();
+    await expect(page.locator('text=Trabajo Registrado (OEDE)').first()).toBeVisible();
+    await expect(page.getByText(/puestos de trabajo asalariados registrados en el sector privado/i).first()).toBeVisible();
+
+    // 4. Guía "Cómo leer estos datos" presente
+    await expect(page.locator('text=Cómo leer estos datos').first()).toBeVisible();
+
+    // 5. Navegación al asistente (#asistente) al hacer clic en ese botón
+    await surveyButton.click();
+    await expect(page).toHaveURL(/.*#asistente/);
+
+    // 6. Visibilidad de la primera pregunta del asistente (¿Qué estás buscando?)
+    await expect(page.locator('text=¿Qué estás buscando?').first()).toBeVisible();
+    await expect(page.locator('text=Paso 1 de 4').first()).toBeVisible();
+  });
 });
