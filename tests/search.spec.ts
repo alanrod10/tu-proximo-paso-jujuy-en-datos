@@ -17,13 +17,19 @@ test.describe('Search functionality', () => {
     await expect(page.locator('text=Coincide con')).toHaveCount(0);
   });
 
-  test('search by official correspondence classification', async ({ page }) => {
+  test('search by official correspondence classification and navigate', async ({ page }) => {
     const searchInput = page.getByPlaceholder('Buscar por área o actividad...');
     await searchInput.fill('agricultura');
 
     // Should show Area A01 with match explanation
     await expect(page.locator('text=Agro y producción primaria').first()).toBeVisible();
     await expect(page.locator('text=Coincide con clasificación oficial')).toBeVisible();
+
+    // Verify Navigation to detail page works
+    await page.locator("div[role='button']:has-text('Agro y producción primaria')").click();
+
+    // Check that we entered detail mode (Breadcrumb/Button says 'Volver')
+    await expect(page.locator('text=Volver al Explorador de Áreas').first()).toBeVisible();
   });
 
   test('search by explicit alias', async ({ page }) => {
@@ -35,10 +41,17 @@ test.describe('Search functionality', () => {
     await expect(page.locator('text=Coincide con término buscado: "abogado"')).toBeVisible();
   });
 
-  test('search unmatched state', async ({ page }) => {
+  test('search unmatched state and clear button', async ({ page }) => {
     const searchInput = page.getByPlaceholder('Buscar por área o actividad...');
-    await searchInput.fill('astronauta');
 
+    // Test unmatched
+    await searchInput.fill('astronauta');
     await expect(page.locator('text=No se encontraron áreas')).toBeVisible();
+
+    // Test clear button
+    await page.getByRole('button', { name: 'Limpiar búsqueda' }).click();
+    await expect(searchInput).toHaveValue('');
+    // Multiple areas should be visible again
+    expect(await page.locator("div[role='button']").count()).toBeGreaterThan(1);
   });
 });
